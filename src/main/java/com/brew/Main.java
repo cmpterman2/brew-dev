@@ -5,12 +5,15 @@
  */
 package com.brew;
 
+import com.brew.config.Configuration;
+import com.brew.devices.Burner;
+import com.brew.devices.Config;
+import com.brew.devices.Mode;
 import com.brew.gpio.Pin;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireDevices;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
-import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import org.slf4j.Logger;
@@ -23,11 +26,19 @@ import org.slf4j.LoggerFactory;
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         LOG.info("Starting Main application");
-
-        //Process Environment variables?
-        //OneWireDevices.setDeviceDirectory(".\\src\\test\\resources\\probes\\");
+        
+        Configuration.load();
+        
+        //If burner configured, create it..?
+        Burner burner = null;
+        if( Configuration.get().getBurnerGPIO()!=null && Configuration.get().getBurnerProbe()!=null) {
+            LOG.info("Creating Burner");
+            burner = new Burner();
+        }
+        
+        //If ferm configured, create it too?
         
         List<String> probes = OneWireDevices.listOneWireProbes();
         
@@ -40,22 +51,35 @@ public class Main {
                 }
             });
         }
+
         
-        String pin = "GPIO1_12";
-        int pinNumber = Pin.getPinNumber(pin);
-        LOG.info("PIN {}:{}", pin, pinNumber);
+        //burner.update(new Config(0, 100.0f, Mode.AUTO));
         
-        Pin.setupPin(pinNumber);
-        Pin.writeValue(pinNumber, "1");
-        try {
-            Pin.readValue(pinNumber);
-        } catch (RuntimeException ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        String pinName = "GPIO1_14";
+//        Pin pin = Pin.lookupPin(pinName);
+//        LOG.info("PIN {}:{}", pinName, pin);
+//        long start = System.currentTimeMillis();
+//        pin.turnOn();
+//        long stop = System.currentTimeMillis();
+//        long difference = stop-start;
+//        LOG.info("ON took {} ms.", difference);
+//        
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException ex) {
+//            java.util.logging.Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//        
+//        start = System.currentTimeMillis();
+//        pin.turnOff();
+//        stop = System.currentTimeMillis();
+//        difference = stop-start;
+//        LOG.info("OFF took {} ms.", difference);
         
-        Thread.sleep(10000);
+        
+        //Only taking 4-6 ms to write out... hmm
+        //Now updated, may be faster as it doesn't do a read...
+        //pin.turnOff();
     }
     
 }

@@ -6,37 +6,76 @@
 package com.brew.gpio;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author andrew.p.davis
  */
 public class Pin {
+    
+     private static final Logger LOG = LoggerFactory.getLogger(Pin.class);
 
-    static String MOCK = "/mock";
-    static String BASE_PATH = "/sys/class/gpio";
-    static String EXPORT_PATH = BASE_PATH + "/export";
-    static String UNEXPORT_PATH = BASE_PATH + "/unexport";
-    static String DEVICE_PATH = BASE_PATH + "/gpio%d";
-    static String DIRECTION_PATH = DEVICE_PATH + "/direction";
-    static String VALUE_PATH = DEVICE_PATH + "/value";
-    static String ACTIVELOW_PATH = DEVICE_PATH + "/active_low";
-    static String BASE_DEVICES = "/sys/devices/";
+    private static final String BASE_PATH = "/sys/class/gpio";
+    private static final String EXPORT_PATH = BASE_PATH + "/export";
+    private static final String UNEXPORT_PATH = BASE_PATH + "/unexport";
+    private static final String DEVICE_PATH = BASE_PATH + "/gpio%d";
+    private static final String DIRECTION_PATH = DEVICE_PATH + "/direction";
+    private static final String VALUE_PATH = DEVICE_PATH + "/value";
+    private static final String ACTIVELOW_PATH = DEVICE_PATH + "/active_low";
+    private static final String BASE_DEVICES = "/sys/devices/";
 
-    //static method to lookup and get pins?
-    //Register outpins differently from inpins.
-    public static Pattern pinPattern = Pattern.compile("(gpio)([0-9])_([0-9]+)$", Pattern.CASE_INSENSITIVE);
+    private static final HashMap<String, Pin> pinMap = new HashMap();
+    private static final Pattern pinPattern = Pattern.compile("(gpio)([0-9])_([0-9]+)$", Pattern.CASE_INSENSITIVE);
 
-    public static int getPinNumber(String pinName) {
+    private int number;
+    private String valuePath;
+
+    public void turnOn() {
+        LOG.debug("ON: {}", number);
+        writeValue("1");
+    }
+
+    public void turnOff() {
+        LOG.debug("OFF: {}", number);
+        writeValue("0");
+    }
+    
+    public String toString() {
+        return "Pin Number: "+number;
+    }
+
+    public synchronized static Pin lookupPin(String gpio) {
+
+        Pin pin = pinMap.get(gpio);
+        if (pin == null) {
+            int pinNumber = getPinNumber(gpio);
+            if (pinNumber > 0) {
+                pin = new Pin(pinNumber);
+                pin.setup();
+                pinMap.put(gpio, pin);
+            }
+        }
+
+        return pin;
+    }
+
+    private Pin(int number) {
+        this.number = number;
+        this.valuePath = String.format(VALUE_PATH, number);
+    }
+
+    private static int getPinNumber(String pinName) {
 
         int pinNumber = -1;
         // See if we have the JSON for this Pin
@@ -53,7 +92,7 @@ public class Pin {
 
     }
 
-    protected static void writeFile(String fileName, String value) throws RuntimeException {
+    private static void writeFile(String fileName, String value) throws RuntimeException {
         try (FileOutputStream fos = new FileOutputStream(fileName)) {
             fos.write(value.getBytes());
         } catch (FileNotFoundException | SecurityException fnfe) {
@@ -63,7 +102,7 @@ public class Pin {
         }
     }
 
-    protected static String readFile(String filename) throws FileNotFoundException, RuntimeException, IOException {
+    private static String readFile(String filename) throws FileNotFoundException, RuntimeException, IOException {
         try (BufferedReader fis = new BufferedReader(new FileReader(filename))) {
             if (fis.ready()) {
                 return fis.readLine();
@@ -72,37 +111,37 @@ public class Pin {
         return null;
     }
 
-    public static String readValue(int pinNumber) throws FileNotFoundException, RuntimeException, IOException {
-        return readFile(getValuePath(pinNumber));
+    private String readValue() throws FileNotFoundException, RuntimeException, IOException {
+        return readFile(valuePath);
     }
 
-    public static void writeValue(int pinNumber, String incoming) {
-        writeFile(getValuePath(pinNumber), incoming);
-        try {
-            String readVal = readValue(pinNumber);
-            if (!readVal.equals(incoming)) {
-                throw new RuntimeException("Tried to change pin " + pinNumber
-                        + " but failed to write: " + incoming + ", got " + readVal);
-            }
-        } catch (FileNotFoundException fnfe) {
-            throw new RuntimeException("Permission denied to GPIO file: " + fnfe.getMessage());
-        } catch (SecurityException e) {
-            throw new RuntimeException("Permission denied to GPIO file: " + e.getMessage());
-        } catch (IOException e) {
-            throw new RuntimeException("IO Exception to GPIO file: " + e.getMessage());
-        }
+    private void writeValue(String value) {
+        writeFile(valuePath, value);
+//        try {
+//            String readVal = readValue();
+//            if (!readVal.equals(value)) {
+//                throw new RuntimeException("Tried to change pin " + number
+//                        + " but failed to write: " + value + ", got " + readVal);
+//            }
+//        } catch (FileNotFoundException fnfe) {
+//            throw new RuntimeException("Permission denied to GPIO file: " + fnfe.getMessage());
+//        } catch (SecurityException e) {
+//            throw new RuntimeException("Permission denied to GPIO file: " + e.getMessage());
+//        } catch (IOException e) {
+//            throw new RuntimeException("IO Exception to GPIO file: " + e.getMessage());
+//        }
     }
 
     // in 
-    public static void setupPin(int pinNumber) {
+    private void setup() {
 
         //Check to see if the pin is already exported
         //
-        if (!Files.exists(Paths.get(getValuePath(pinNumber)))) {
-            writeFile(getExportPath(), String.valueOf(pinNumber));
+        if (!Files.exists(Paths.get(valuePath))) {
+            writeFile(EXPORT_PATH, String.valueOf(number));
         }
-        writeFile(getDirectionPath(pinNumber), "out");
-        
+        writeFile(String.format(DIRECTION_PATH, number), "out");
+
         // Check to see if it doesn't exist before tryping to export it.
 //		    if (!new File(FilePaths.getValuePath(pinNumber)).exists()) {
 //		        writeFile(FilePaths.getExportPath(), String.valueOf(pinNumber));
@@ -110,41 +149,9 @@ public class Pin {
 //			writeFile(FilePaths.getDirectionPath(pinNumber), direction.value);
     }
 
-    public void export() {
-
-    }
-
-    static String getExportPath() {
-
-        if (System.getProperty("debugGPIO") != null) {
-            return MOCK + EXPORT_PATH;
-        }
-
-        return EXPORT_PATH;
-    }
-
-    static String getUnexportPath() {
-        if (System.getProperty("debugGPIO") != null) {
-            return MOCK + UNEXPORT_PATH;
-        }
-
-        return UNEXPORT_PATH;
-    }
-
-    public static String getDirectionPath(int pinNumber) {
-        if (System.getProperty("debugGPIO") != null) {
-            return String.format(MOCK + DIRECTION_PATH, pinNumber);
-        }
-
-        return String.format(DIRECTION_PATH, pinNumber);
-    }
-
-    public static String getValuePath(int pinNumber) {
-        if (System.getProperty("debugGPIO") != null) {
-            return String.format(MOCK + VALUE_PATH, pinNumber);
-        }
-
-        return String.format(VALUE_PATH, pinNumber);
+    private void shutdown() {
+        turnOff();
+        writeFile(UNEXPORT_PATH, String.valueOf(number));
     }
 
 }

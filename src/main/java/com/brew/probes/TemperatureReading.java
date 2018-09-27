@@ -33,7 +33,7 @@ public class TemperatureReading {
         return this.tempInC;
     }
     
-    protected float getTempInF() {
+    public float getTempInF() {
         return this.tempInC*9.0f/5.0f + 32.0f;
     }
     
