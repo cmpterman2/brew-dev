@@ -7,6 +7,8 @@ package com.brew.rest;
 
 import com.brew.devices.Burner;
 import com.brew.devices.Config;
+import com.brew.devices.Fermenter;
+import com.brew.devices.FermenterData;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -19,18 +21,18 @@ import javax.ws.rs.core.Response;
  *
  * @author andrew.p.davis
  */
-@Path("/temp")
-public class TempService {
+@Path("/fermenter")
+public class FermenterService {
     
-    Burner burner;
-    public TempService(Burner burner){
-        this.burner = burner;
+    Fermenter fermenter;
+    public FermenterService(Fermenter fermenter){
+        this.fermenter = fermenter;
     }
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Config getStringResource() {
-        return burner.getConfig();
+    public FermenterData getStringResource() {
+        return fermenter.getFermenterData();
     }
 
     @POST
@@ -38,7 +40,7 @@ public class TempService {
     public Response putStringResource(Config config) {
         //ObjectMapper mapper = new ObjectMapper();
         //this.resource.setResource(json.getResource());
-        burner.update(config);
+       // fermenter.update(config);
         return Response.status(Response.Status.OK).build();
     }
 }

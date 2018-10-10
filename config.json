@@ -1,4 +1,9 @@
 {
   "burnerGPIO" : "GPIO1_12",
-  "burnerProbe" : "28-00000534db01"
+  "burnerProbe" : "28-00000534db01",
+  "heatGPIO" : "GPIO1_14",
+  "coolGPIO" : "GPIO1_15",
+  "fermenterProbe" : "28-000005353c5a",
+  "airProbe" : "28-00000534bdba",
+  "port" : 8080
 }

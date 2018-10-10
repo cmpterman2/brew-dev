@@ -10,7 +10,7 @@ package com.brew.devices;
  * @author andrew.p.davis
  */
 public class Config {
-
+    
     private int duty;
     private float target;
     private Mode mode;

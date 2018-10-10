@@ -7,8 +7,11 @@ package com.brew;
 
 import com.brew.config.Configuration;
 import com.brew.devices.Burner;
+import com.brew.devices.Fermenter;
 import com.brew.rest.BurnerService;
 import com.brew.rest.ConfigService;
+import com.brew.rest.FermenterService;
+import com.brew.websocket.WebSocketNotifier;
 import com.brew.websocket.WebSocketServlet;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -29,6 +32,8 @@ import org.slf4j.LoggerFactory;
  */
 public class BrewServer {
     private static final Logger LOG = LoggerFactory.getLogger(BrewServer.class);
+    
+    static WebSocketNotifier notifier;
 
     public static void main(String[] args) {
         
@@ -42,7 +47,12 @@ public class BrewServer {
             burner = new Burner();
         }
         
+        Fermenter fermenter = new Fermenter();
+        
         //If ferm configured, create it too?
+        
+        notifier = new WebSocketNotifier();
+        notifier.registerListeners();
         
         
         // Jetty / Web Server  //
@@ -52,6 +62,7 @@ public class BrewServer {
         //Is this even needed?
         //connector.setHost("0.0.0.0");
         connector.setPort(Configuration.get().getPort());
+        LOG.info("Starting Web Server on port: {}", Configuration.get().getPort());
         server.addConnector(connector);
         
         
@@ -76,9 +87,11 @@ public class BrewServer {
         
         // Jersey Stuff 
         BurnerService burnerService = new BurnerService(burner);
+        FermenterService fermenterService = new FermenterService(fermenter);
 
         ResourceConfig rc = new ResourceConfig();
         rc.register(burnerService);
+        rc.register(fermenterService);
         rc.register(new ConfigService());
 
         ServletContainer sc = new ServletContainer(rc);
@@ -127,6 +140,10 @@ public class BrewServer {
         } catch (Throwable t) {
             t.printStackTrace(System.err);
         }
+        
+        
+        
+        
 
     }
 }

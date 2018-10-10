@@ -57,6 +57,11 @@ public class Configuration {
     
     private String burnerGPIO;
     private String burnerProbe;
+    private String heatGPIO;
+    private String coolGPIO;
+    private String fermenterProbe;
+    private String airProbe;
+    
     private int port = 8080;
 
     /**
@@ -99,6 +104,62 @@ public class Configuration {
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /**
+     * @return the heatGPIO
+     */
+    public String getHeatGPIO() {
+        return heatGPIO;
+    }
+
+    /**
+     * @param heatGPIO the heatGPIO to set
+     */
+    public void setHeatGPIO(String heatGPIO) {
+        this.heatGPIO = heatGPIO;
+    }
+
+    /**
+     * @return the coolGPIO
+     */
+    public String getCoolGPIO() {
+        return coolGPIO;
+    }
+
+    /**
+     * @param coolGPIO the coolGPIO to set
+     */
+    public void setCoolGPIO(String coolGPIO) {
+        this.coolGPIO = coolGPIO;
+    }
+
+    /**
+     * @return the fermenterProbe
+     */
+    public String getFermenterProbe() {
+        return fermenterProbe;
+    }
+
+    /**
+     * @param fermenterProbe the fermenterProbe to set
+     */
+    public void setFermenterProbe(String fermenterProbe) {
+        this.fermenterProbe = fermenterProbe;
+    }
+
+    /**
+     * @return the airProbe
+     */
+    public String getAirProbe() {
+        return airProbe;
+    }
+
+    /**
+     * @param airProbe the airProbe to set
+     */
+    public void setAirProbe(String airProbe) {
+        this.airProbe = airProbe;
     }
     
 }

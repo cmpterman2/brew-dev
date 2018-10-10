@@ -26,14 +26,14 @@ public class TemperatureReading {
     }
     
     public synchronized String getDisplayTemp(){
-        return df.format(getTempInF());
+        return df.format(calculateTempInF());
     }
 
     protected float getTempInC() {
         return this.tempInC;
     }
     
-    public float getTempInF() {
+    public float calculateTempInF() {
         return this.tempInC*9.0f/5.0f + 32.0f;
     }
     

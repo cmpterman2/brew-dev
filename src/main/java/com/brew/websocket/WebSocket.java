@@ -67,6 +67,14 @@ public class WebSocket extends WebSocketAdapter
     public void onWebSocketError(Throwable cause)
     {
         super.onWebSocketError(cause);
-        cause.printStackTrace(System.err);
+        //cause.printStackTrace(System.err);
+    }
+    
+    public void sendMessage(String message){ 
+        try {
+                 session.getRemote().sendString(message);
+            } catch (IOException ex) {
+                Logger.getLogger(WebSocket.class.getName()).log(Level.SEVERE, null, ex);
+            }
     }
 }

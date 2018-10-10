@@ -6,8 +6,8 @@
 package com.brew.rest;
 
 import com.brew.devices.Burner;
+import com.brew.devices.BurnerData;
 import com.brew.devices.Config;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -30,8 +30,8 @@ public class BurnerService {
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Config getStringResource() {
-        return burner.getConfig();
+    public BurnerData getStringResource() {
+        return burner.getBurnerData();
     }
 
     @POST

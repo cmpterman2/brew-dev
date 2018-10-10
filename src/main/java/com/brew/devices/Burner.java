@@ -22,13 +22,16 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Burner.class);
 
-    String gpio;
-    String probe;
-    int minRunTime = 100; //ms of run time.
-    Config config;
-    Pin pin;
-    Thread autoThread;
-    TemperatureReading lastReading;
+    //Data - this is published / gettable
+    private String gpio;
+    private String probe;
+    private Config config;
+    private TemperatureReading lastReading;
+    
+    //Internal data
+    private Pin pin;
+//    int minRunTime = 100; //ms of run time.
+//    private Thread autoThread;
 
     @Override
     public void notify(TemperatureReading notification) {
@@ -110,10 +113,10 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
 
         if (this.config != null) {
 
-            if (autoThread != null) {
-                autoThread.interrupt();
-                //autoThread.
-            }
+//            if (autoThread != null) {
+//                autoThread.interrupt();
+//                //autoThread.
+//            }
 
             LOG.debug("Updating configuration: {}", this.config.getMode());
             switch (config.getMode()) {
@@ -125,7 +128,7 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
                     break;
                 case AUTO:
                     if (this.lastReading != null) {
-                        if (lastReading.getTempInF() > config.getTarget()) {
+                        if (lastReading.calculateTempInF() > config.getTarget()) {
                             pin.turnOff();
                         } else {
                             pin.turnOn();
@@ -134,10 +137,10 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
                         pin.turnOff();
                     }
                     break;
-                case DUTY:
-                    autoThread = new Thread(this);
-                    autoThread.start();
-                    break;
+//                case DUTY:
+//                    autoThread = new Thread(this);
+//                    autoThread.start();
+//                    break;
                 default:
                     pin.turnOff();
                     break;
@@ -149,5 +152,9 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
     public Config getConfig() {
         return config;
     }
-
+    
+    public BurnerData getBurnerData() {
+        return new BurnerData(gpio, probe, config, lastReading);
+    }
+   
 }

@@ -53,7 +53,7 @@ public class ThermometerTest {
         DecimalFormat df = new DecimalFormat("###.##");
         assertEquals("40.02", df.format(result));
         
-        result = OneWireDevices.readTemp("28-23231441").getTempInF();
+        result = OneWireDevices.readTemp("28-23231441").calculateTempInF();
         assertEquals("104.04", df.format(result));
         // TODO review the generated test code and remove the default call to fail.
         //fail("The test case is a prototype.");
