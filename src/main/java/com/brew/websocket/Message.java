@@ -11,15 +11,31 @@ package com.brew.websocket;
  */
 public class Message {
 
+    /**
+     * @return the id
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * @param id the id to set
+     */
+    public void setId(String id) {
+        this.id = id;
+    }
+
         
     private String type;
+    private String id;
     private Object data;
     
     public Message(){}
     
-    public Message(String type, Object data){
+    public Message(String type, String id, Object data){
         this.type = type;
         this.data = data;
+        this.id = id;
     }
     /**
      * @return the type

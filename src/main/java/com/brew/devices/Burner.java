@@ -108,6 +108,7 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
         //Compare to existing config?
         
         if( newConfig != null ) {
+            LOG.debug("Updating configuration: {}", this.config);
             this.config = newConfig;
         }
 
@@ -118,7 +119,7 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
 //                //autoThread.
 //            }
 
-            LOG.debug("Updating configuration: {}", this.config.getMode());
+            
             switch (config.getMode()) {
                 case ON:
                     pin.turnOn();

@@ -40,7 +40,7 @@ public class FermenterService {
     public Response putStringResource(Config config) {
         //ObjectMapper mapper = new ObjectMapper();
         //this.resource.setResource(json.getResource());
-       // fermenter.update(config);
+        fermenter.update(config);
         return Response.status(Response.Status.OK).build();
     }
 }

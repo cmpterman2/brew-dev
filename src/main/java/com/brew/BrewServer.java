@@ -8,6 +8,9 @@ package com.brew;
 import com.brew.config.Configuration;
 import com.brew.devices.Burner;
 import com.brew.devices.Fermenter;
+import com.brew.probes.OneWireMonitor;
+import com.brew.probes.TemperatureReading;
+import com.brew.rest.BrewService;
 import com.brew.rest.BurnerService;
 import com.brew.rest.ConfigService;
 import com.brew.rest.FermenterService;
@@ -21,6 +24,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
@@ -33,7 +37,9 @@ import org.slf4j.LoggerFactory;
 public class BrewServer {
     private static final Logger LOG = LoggerFactory.getLogger(BrewServer.class);
     
-    static WebSocketNotifier notifier;
+    static WebSocketNotifier burnerNotifier;
+    static WebSocketNotifier fermNotifier;
+    static WebSocketNotifier airNotifier;
 
     public static void main(String[] args) {
         
@@ -51,8 +57,14 @@ public class BrewServer {
         
         //If ferm configured, create it too?
         
-        notifier = new WebSocketNotifier();
-        notifier.registerListeners();
+        burnerNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "burner");
+        OneWireMonitor.get().monitor(Configuration.get().getBurnerProbe(), burnerNotifier);
+        
+        fermNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "ferm");
+        OneWireMonitor.get().monitor(Configuration.get().getFermenterProbe(), fermNotifier);
+        
+        airNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "air");
+        OneWireMonitor.get().monitor(Configuration.get().getAirProbe(), airNotifier);
         
         
         // Jetty / Web Server  //
@@ -92,6 +104,8 @@ public class BrewServer {
         ResourceConfig rc = new ResourceConfig();
         rc.register(burnerService);
         rc.register(fermenterService);
+        rc.register(MultiPartFeature.class);
+        rc.register(new BrewService());
         rc.register(new ConfigService());
 
         ServletContainer sc = new ServletContainer(rc);

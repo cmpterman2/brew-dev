@@ -14,9 +14,11 @@ import com.brew.probes.TemperatureReading;
 public class FermenterData {
 
     
+
+    
     public FermenterData() {}
     
-    public FermenterData(String heatGpio, String coolGpio, String probe, String airProbe, Config config, TemperatureReading lastReading, TemperatureReading airLastReading) {
+    public FermenterData(String heatGpio, String coolGpio, String probe, String airProbe, Config config, TemperatureReading lastReading, TemperatureReading airLastReading, Fermenter.State state) {
         this.heatGpio = heatGpio;
         this.coolGpio = coolGpio;
         this.probe = probe;
@@ -24,8 +26,23 @@ public class FermenterData {
         this.config = config;
         this.lastReading = lastReading;
         this.airLastReading = airLastReading;
-        
+        this.state = state;
     }
+    
+    /**
+     * @return the state
+     */
+    public Fermenter.State getState() {
+        return state;
+    }
+
+    /**
+     * @param state the state to set
+     */
+    public void setState(Fermenter.State state) {
+        this.state = state;
+    }
+    
     /**
      * @return the config
      */
@@ -133,5 +150,7 @@ public class FermenterData {
 
     private TemperatureReading lastReading;
     private TemperatureReading airLastReading;
+    
+    private Fermenter.State state;
     
 }

@@ -10,5 +10,5 @@ package com.brew.devices;
  * @author andrew.p.davis
  */
 public enum Mode {
-    ON, OFF, AUTO, DUTY, SCHEDULE
+    ON, OFF, AUTO, DUTY
 }

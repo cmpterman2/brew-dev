@@ -56,10 +56,10 @@ public class WebSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        super.onWebSocketClose(statusCode,reason);
         synchronized(connections){
             connections.remove(this);
         }
+        super.onWebSocketClose(statusCode,reason);
         System.out.println("Socket Closed: [" + statusCode + "] " + reason);
     }
     

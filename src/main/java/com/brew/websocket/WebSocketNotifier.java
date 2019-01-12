@@ -5,10 +5,8 @@
  */
 package com.brew.websocket;
 
-import com.brew.config.Configuration;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireMonitor;
-import com.brew.probes.TemperatureReading;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -19,15 +17,20 @@ import java.util.logging.Logger;
  *
  * @author andrew.p.davis
  */
-public class WebSocketNotifier implements Listener<TemperatureReading>{
+public class WebSocketNotifier<K> implements Listener<K>{
     
-    public void registerListeners() {
-        OneWireMonitor.get().monitor(Configuration.get().getBurnerProbe(), this);
+    private String type;
+    private String id;
+    
+    public WebSocketNotifier(String type, String id) {
+        this.type = type;
+        this.id = id;
     }
 
     @Override
-    public void notify(TemperatureReading notification) {
-        Message message = new Message("TEMP", notification);
+    public void notify(K data) {
+        //Need to include the probe ID
+        Message message = new Message(type, id, data);
         ObjectMapper mapper = new ObjectMapper();
         String json=null;
         try {
@@ -40,4 +43,5 @@ public class WebSocketNotifier implements Listener<TemperatureReading>{
             webSocket.sendMessage(json);
         }
     }
+  
 }
