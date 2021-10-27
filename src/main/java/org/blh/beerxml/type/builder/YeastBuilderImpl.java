@@ -164,9 +164,9 @@ public class YeastBuilderImpl implements YeastBuilder {
             case Yeast.MAX_TEMPERATURE:
                 maxTemperature = new Celsius(Double.parseDouble(value));
                 break;
-            case Yeast.FLOCCULATION:
-                flocculation = Yeast.YEAST_FLOCCULATION.valueOf(value.toUpperCase());
-                break;
+            // case Yeast.FLOCCULATION:
+            //     flocculation = Yeast.YEAST_FLOCCULATION.valueOf(value.toUpperCase());
+            //     break;
             case Yeast.ATTENUATION:
                 attenuation = new Percentage(Double.parseDouble(value));
                 break;

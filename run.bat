@@ -1,0 +1,1 @@
+java -jar .\target\brew-all.jar

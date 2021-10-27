@@ -21,7 +21,7 @@ public class Notifier {
         
     }
     
-    public static void notifyListeners(List<Listener> listeners, Object notification)
+    public static synchronized void notifyListeners(List<Listener> listeners, Object notification)
     {
         listeners.stream().map((listener) -> new Runnable() {
             public void run() {
@@ -33,7 +33,7 @@ public class Notifier {
     }
     
     //Do we want to call notify with the last value?  
-    public static void registerListener(Object listener) {
+    public static synchronized void registerListener(Object listener) {
         tempListeners.add(listener);
     }
     

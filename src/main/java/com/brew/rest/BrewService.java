@@ -6,6 +6,8 @@
 package com.brew.rest;
 
 import com.brew.devices.BurnerData;
+import com.brew.recipe.Recipe;
+
 import java.io.InputStream;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -33,8 +35,10 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
  */
 @Path("/brew")
 public class BrewService {
+
+	private Recipe recipe = null;
     
-    private List<BeerXMLRecordSet<BeerXMLRecord>> records = null;
+    //private List<BeerXMLRecordSet<BeerXMLRecord>> records = null;
     
 
     public BrewService(){
@@ -43,8 +47,8 @@ public class BrewService {
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<BeerXMLRecordSet<BeerXMLRecord>> getStringResource() {
-        return records;
+    public Recipe getStringResource() {
+        return recipe;
     }
     
     @POST
@@ -54,20 +58,38 @@ public class BrewService {
 		@FormDataParam("file") InputStream uploadedInputStream,
 		@FormDataParam("file") FormDataContentDisposition fileDetail)  {
 
-		String uploadedFileLocation = "c://uploaded/" + fileDetail.getFileName();
+		//String uploadedFileLocation = "c://uploaded/" + fileDetail.getFileName();
+		//System.out.println("Called");
 
 		// save it
-		writeToFile(uploadedInputStream, uploadedFileLocation);
-                try {
-                    records = DOMParser.defaultDOMParser().parse(new File(uploadedFileLocation));
-                } catch( Exception pe) {
-                    pe.printStackTrace();
-                }
-                
+		//writeToFile(uploadedInputStream, uploadedFileLocation);
 
-		String output = "File uploaded to : " + uploadedFileLocation;
+		Response.Status status = Response.Status.BAD_REQUEST;
 
-		return Response.status(200).entity(output).build();
+		try {
+			List<BeerXMLRecordSet<BeerXMLRecord>> recordSets = DOMParser.defaultDOMParser().parse(uploadedInputStream);
+
+			if( recordSets.size() > 0 ) {
+				List<BeerXMLRecord> records = recordSets.get(0).getRecords();
+				if( records.size() > 0 ) {
+					BeerXMLRecord record = records.get(0);
+					if (record instanceof org.blh.beerxml.type.Recipe ){
+						org.blh.beerxml.type.Recipe bRecipe = (org.blh.beerxml.type.Recipe) record;
+						recipe = new Recipe();
+						recipe.setName(bRecipe.getName());
+
+
+						status = Response.Status.OK;
+					}
+				}
+
+			}
+
+		} catch( Exception pe) {
+			pe.printStackTrace();
+		}
+
+		return Response.status(status).build();
 
 	}
         

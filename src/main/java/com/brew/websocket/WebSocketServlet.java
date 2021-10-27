@@ -16,6 +16,7 @@ public class WebSocketServlet extends org.eclipse.jetty.websocket.servlet.WebSoc
     @Override
     public void configure(WebSocketServletFactory factory)
     {
+        factory.getPolicy().setIdleTimeout(0);
         factory.register(WebSocket.class);
     }
     

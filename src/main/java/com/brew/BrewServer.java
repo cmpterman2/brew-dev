@@ -40,6 +40,8 @@ public class BrewServer {
     static WebSocketNotifier burnerNotifier;
     static WebSocketNotifier fermNotifier;
     static WebSocketNotifier airNotifier;
+    static WebSocketNotifier targetNotifier;
+    static WebSocketNotifier stateNotifier;
 
     public static void main(String[] args) {
         
@@ -65,6 +67,12 @@ public class BrewServer {
         
         airNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "air");
         OneWireMonitor.get().monitor(Configuration.get().getAirProbe(), airNotifier);
+
+        targetNotifier = new WebSocketNotifier<TemperatureReading>("TARGET", "");
+        fermenter.addTargetListener(targetNotifier);
+
+        stateNotifier = new WebSocketNotifier<TemperatureReading>("STATE", "");
+        fermenter.addStateListener(stateNotifier);
         
         
         // Jetty / Web Server  //

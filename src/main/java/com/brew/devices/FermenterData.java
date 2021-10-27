@@ -18,7 +18,7 @@ public class FermenterData {
     
     public FermenterData() {}
     
-    public FermenterData(String heatGpio, String coolGpio, String probe, String airProbe, Config config, TemperatureReading lastReading, TemperatureReading airLastReading, Fermenter.State state) {
+    public FermenterData(String heatGpio, String coolGpio, String probe, String airProbe, Config config, TemperatureReading lastReading, TemperatureReading airLastReading, Fermenter.State state, long scheduleStart) {
         this.heatGpio = heatGpio;
         this.coolGpio = coolGpio;
         this.probe = probe;
@@ -27,6 +27,7 @@ public class FermenterData {
         this.lastReading = lastReading;
         this.airLastReading = airLastReading;
         this.state = state;
+        this.scheduleStart = scheduleStart;
     }
     
     /**
@@ -43,6 +44,20 @@ public class FermenterData {
         this.state = state;
     }
     
+    /**
+     * @return the scheduleStart
+     */
+    public long getScheduleStart() {
+        return scheduleStart;
+    }
+
+    /**
+     * @param scheduleStart the scheduleStart to set
+     */
+    public void setScheduleStart(long scheduleStart) {
+        this.scheduleStart = scheduleStart;
+    }
+
     /**
      * @return the config
      */
@@ -152,5 +167,5 @@ public class FermenterData {
     private TemperatureReading airLastReading;
     
     private Fermenter.State state;
-    
+    private long scheduleStart;
 }

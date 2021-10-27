@@ -70,7 +70,7 @@ public class WebSocket extends WebSocketAdapter
         //cause.printStackTrace(System.err);
     }
     
-    public void sendMessage(String message){ 
+    public synchronized void sendMessage(String message){ 
         try {
                  session.getRemote().sendString(message);
             } catch (IOException ex) {

@@ -13,6 +13,7 @@ import com.brew.probes.TemperatureReading;
 import java.text.NumberFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
 
 /**
  *
@@ -34,19 +35,29 @@ public class Fermenter implements Listener<TemperatureReading> {
     private static final long COOLING_MIN = 1000*60*5; //5 Minutes
     private static final long COOLING_MAX= 1000*60*10; //10 Minutes
     
+    //private ScheduleThread scheduleThread;
+
+    private static final long DAY = 1000*60*60*24;
+    private long scheduleStart = -1L;
+    
+
     enum State {
         COOLING, HEATING, DELAY_COOLING, OFF
     }
 
     private TemperatureReading lastReading;
     private TemperatureReading airLastReading;
+
+    private ArrayList<Listener> targetListeners = new ArrayList();
+    private ArrayList<Listener> stateListeners = new ArrayList();
     
     private static final float COOL_THRESHOLD = .5f;
     private static final float HEAT_THRESHOLD = -.1f;
     
     private long coolStart = 0;
     private long coolStop = 0;
-    
+
+    private float STEP = .25f;
     
     private Pin coolPin;
     private Pin heatPin;
@@ -55,7 +66,7 @@ public class Fermenter implements Listener<TemperatureReading> {
         try {
             Thread.sleep(30000);
             for(;;Thread.sleep(30000)) {
-                update(null);
+                update(null, null);
             }
         } catch (Exception e ) {}
     });
@@ -85,24 +96,60 @@ public class Fermenter implements Listener<TemperatureReading> {
         
         config = new Config(0,0,Mode.OFF);
     }
+
+    public void addTargetListener(Listener listener) {
+        if (!targetListeners.contains(listener)) {
+            targetListeners.add(listener);
+        }
+    }
+
+    public void addStateListener(Listener listener) {
+        if (!stateListeners.contains(listener)) {
+            stateListeners.add(listener);
+        }
+    }
     
     
      //If null - just use current config, but re-process..
-    public synchronized void update(Config newConfig) {
+    public synchronized void update(Config newConfig, String source) {
+
+        State oldState = this.state;
+        float oldTarget = this.config.getTarget();
+
         //Is this a configuration change?
         if( newConfig != null ) {
-            //Fermenter update
-            LOG.info("Updating configuration: {}", this.config);
-//            if( this.config.getMode() == newConfig.getMode() ) {
-//                
-//            }
-            this.config = newConfig;
+            //Validate source is schedule thread to make sure it only changes the target and doesn't overwrite something else.
+            if( Mode.SCHEDULE.toString().equals(source) && ! config.compare(newConfig) ) {
+                LOG.warn("Avoided configuration overwrite from schedule thread");
+            }
+            else {
+                LOG.info("Updating configuration: {}", this.config);
+                this.config = newConfig;
+            }
         }
 
-        if (this.config != null) {
+        
 
+
+        if (this.config != null) {
             
             switch (config.getMode()) {
+                case SCHEDULE: {
+
+                    if( scheduleStart <= 0 ) {
+                        scheduleStart = System.currentTimeMillis();
+                    }
+
+                    //Need to calculate target for right now.
+                    //config.setTarget(0f);
+                    float newTarget = calculateScheduleTarget();
+                    //Start thread
+                    config.setTarget(newTarget);
+
+
+
+                    //fall through to auto since it should go to auto
+                }
                 case AUTO:
                     if (this.lastReading != null) {
                         float diff = lastReading.calculateTempInF() - config.getTarget();
@@ -118,10 +165,19 @@ public class Fermenter implements Listener<TemperatureReading> {
                     }
                     break;
                 default: //Handle OFF and for other unsupported cases.
+                    scheduleStart = -1l;
                     off();
                     break;
 
             }
+        }
+
+        if( this.state != oldState) {
+            com.brew.notify.Notifier.notifyListeners(stateListeners, this.state);
+        }
+
+        if( this.config.getTarget() != oldTarget ) {
+            com.brew.notify.Notifier.notifyListeners(targetListeners, this.config.getTarget());
         }
     }
     
@@ -245,9 +301,46 @@ public class Fermenter implements Listener<TemperatureReading> {
     }
     
     public FermenterData getFermenterData() {
-        return new FermenterData(heatGpio, coolGpio, probe, airProbe, config, lastReading, airLastReading, state);
+        return new FermenterData(heatGpio, coolGpio, probe, airProbe, config, lastReading, airLastReading, state, scheduleStart);
     }
     
-   
+   public float calculateScheduleTarget()
+   {
+       float days = (float) (System.currentTimeMillis() - this.scheduleStart) / DAY;
+
+       Entry priorEntry = null;
+       Entry currentEntry = null;
+       Entry nextEntry = null;
+       boolean slope = false;
+
+       for (Entry entry :  config.getSchedule()) {
+           if( days >= entry.getDay() ) {
+               priorEntry = currentEntry;
+               currentEntry = entry;
+           } else if ( nextEntry == null ){
+                nextEntry = entry;
+           }
+       }
+
+       if (currentEntry == null ) {
+           return config.getTarget();
+       }
+
+       //If prior two points have same target, slope dat shit
+       if( priorEntry != null && currentEntry != null ) {
+        slope = priorEntry.getTarget() == currentEntry.getTarget();
+        }   
+
+       if( slope && nextEntry!=null ) {
+           float proportion = (days - currentEntry.getDay()) / (nextEntry.getDay() - currentEntry.getDay());
+           float tempDiff = proportion * (nextEntry.getTarget()-currentEntry.getTarget());
+           float roundTempDiff = (float) Math.round(tempDiff / STEP) * STEP;
+
+           return currentEntry.getTarget()+roundTempDiff;
+       } else {
+           return currentEntry.getTarget();
+       }
+
+   }
     
 }

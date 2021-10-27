@@ -3,12 +3,25 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.brew.devices;
+package com.brew.recipe;
 
 /**
  *
  * @author andrew.p.davis
  */
-public enum Mode {
-    ON, OFF, AUTO, DUTY, SCHEDULE
+public class Recipe {
+    private String name;
+
+    
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+
 }

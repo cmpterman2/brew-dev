@@ -40,6 +40,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import java.io.InputStream;
 
 /**
  * Implements the BeerXML parsing using DOM technology, as opposed to SAX or
@@ -101,7 +102,7 @@ public class DOMParser implements BeerXMLParser {
     }
 
     @Override
-    public List<BeerXMLRecordSet<BeerXMLRecord>> parse(File xmlFile) throws ParseException, NoRecordNameException {
+    public List<BeerXMLRecordSet<BeerXMLRecord>> parse(InputStream xmlFile) throws ParseException, NoRecordNameException {
         try {
             DocumentBuilderFactory bdf = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = bdf.newDocumentBuilder();

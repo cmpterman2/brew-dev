@@ -67,7 +67,9 @@
                 <appender-ref ref="FILE-APP" />
 	</logger>
         
-        <logger name="com.brew.gpio.Pin" level="debug"/>
+        <!--<logger name="com.brew.gpio.Pin" level="debug"/>
+
+		<logger name="com.brew.devices.Burner" level="debug"/>-->
         
         
 

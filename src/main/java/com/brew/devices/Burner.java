@@ -30,8 +30,23 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
     
     //Internal data
     private Pin pin;
-//    int minRunTime = 100; //ms of run time.
-//    private Thread autoThread;
+    private boolean pinOn = false;
+    int minRunTime = 100; //ms of run time.
+    private Thread autoThread;
+
+    private void turnOn(){
+        if( !pinOn){
+            pin.turnOn();
+            pinOn = true;
+        }
+    }
+
+    private void turnOff(){
+        if ( pinOn ){
+            pin.turnOff();
+            pinOn = false;
+        }
+    }
 
     @Override
     public void notify(TemperatureReading notification) {
@@ -65,42 +80,57 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
         //Do we thread this?
         //Need to loop?
         boolean running = true;
-        while (running) {
 
-            //If auto - need to be based on temp... hmm
-            //Start thread in duty mode
-            long start = System.currentTimeMillis();
-            //Do smaller first...
-
-            if (config.getDuty() > 50) {
-                pin.turnOff();
-            } else {
-                pin.turnOn();
-            }
-            long stop = System.currentTimeMillis();
-            long timeTaken = stop - start;
-
-            LOG.debug("First action took: {} ms.", timeTaken);
-
-            timeTaken = timeTaken < 1 ? 1 : timeTaken;
-
-            long timeNeeded = (timeTaken * (100 - config.getDuty()) / config.getDuty()) - timeTaken;
-            LOG.debug("First action took: {} ms.", timeTaken);
-
-            try {
-                Thread.sleep(timeNeeded);
-            } catch (InterruptedException ex) {
-                java.util.logging.Logger.getLogger(Burner.class.getName()).log(Level.SEVERE, null, ex);
-            }
-
-            if (config.getDuty() > 50) {
-                pin.turnOn();
-            } else {
-                pin.turnOff();
-            }
-
+        if( config.getDuty() <=0 || config.getDuty() >= 100 ){
+            running = false;
+            LOG.error("Invalid Duty {}", config.getDuty());
         }
+        try{
+            while (running) {
 
+                //If auto - need to be based on temp... hmm
+                //Start thread in duty mode
+                long start = System.currentTimeMillis();
+                //Do smaller first...
+
+                if (config.getDuty() > 50) {
+                    turnOff();
+                } else {
+                    turnOn();
+                }
+                Thread.sleep(this.minRunTime);
+
+                
+                long stop = System.currentTimeMillis();
+                long timeTaken = stop - start;
+
+                LOG.debug("First action took: {} ms.", timeTaken);
+
+                timeTaken = timeTaken < 1 ? 1 : timeTaken;
+                long timeNeeded = 0;
+                if( config.getDuty() > 50 ) {
+                    timeNeeded = (timeTaken * config.getDuty() / (100 - config.getDuty()) );
+                } else {
+                    timeNeeded = (timeTaken * (100 - config.getDuty()) / config.getDuty());
+                }
+                
+                start = System.currentTimeMillis();
+
+                   
+                
+
+                if (config.getDuty() > 50) {
+                    turnOn();
+                } else {
+                    turnOff();
+                }
+                Thread.sleep(timeNeeded);
+                stop = System.currentTimeMillis();
+                LOG.debug("Second action took: {} ms.", stop - start);
+            }
+        } catch (InterruptedException ex) {
+            LOG.debug("Interrupted Duty Thread");
+        }
     }
 
     //If null - just use current config, but re-process..
@@ -114,36 +144,37 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
 
         if (this.config != null) {
 
-//            if (autoThread != null) {
-//                autoThread.interrupt();
-//                //autoThread.
-//            }
+            if (autoThread != null) {
+                autoThread.interrupt();
+                //autoThread.
+                turnOff();
+            }
 
             
             switch (config.getMode()) {
                 case ON:
-                    pin.turnOn();
+                    turnOn();
                     break;
                 case OFF:
-                    pin.turnOff();
+                    turnOff();
                     break;
                 case AUTO:
                     if (this.lastReading != null) {
                         if (lastReading.calculateTempInF() > config.getTarget()) {
-                            pin.turnOff();
+                            turnOff();
                         } else {
-                            pin.turnOn();
+                            turnOn();
                         }
                     } else {
-                        pin.turnOff();
+                        turnOff();
                     }
                     break;
-//                case DUTY:
-//                    autoThread = new Thread(this);
-//                    autoThread.start();
-//                    break;
+                case DUTY:
+                    autoThread = new Thread(this);
+                    autoThread.start();
+                    break;
                 default:
-                    pin.turnOff();
+                    turnOff();
                     break;
 
             }

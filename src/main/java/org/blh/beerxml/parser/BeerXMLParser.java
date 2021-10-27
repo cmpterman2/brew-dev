@@ -6,6 +6,7 @@ import org.blh.beerxml.ClassToRecordNameMapper.NoRecordNameException;
 import org.blh.beerxml.ParseException;
 import org.blh.beerxml.type.BeerXMLRecord;
 import org.blh.beerxml.type.BeerXMLRecordSet;
+import java.io.InputStream;
 
 /**
  * Represents a class that can parse a BeerXML version 1 file.
@@ -14,5 +15,5 @@ import org.blh.beerxml.type.BeerXMLRecordSet;
  */
 public interface BeerXMLParser {
 
-    List<BeerXMLRecordSet<BeerXMLRecord>> parse(File xmlFile) throws ParseException, NoRecordNameException;
+    List<BeerXMLRecordSet<BeerXMLRecord>> parse(InputStream xmlFile) throws ParseException, NoRecordNameException;
 }

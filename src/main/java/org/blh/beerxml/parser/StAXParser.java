@@ -11,6 +11,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.blh.beerxml.ParseException;
 import org.blh.beerxml.type.BeerXMLRecord;
 import org.blh.beerxml.type.BeerXMLRecordSet;
+import java.io.InputStream;
 
 /**
  * UNFINISHED!
@@ -20,10 +21,10 @@ import org.blh.beerxml.type.BeerXMLRecordSet;
 public class StAXParser implements BeerXMLParser {
 
     @Override
-    public List<BeerXMLRecordSet<BeerXMLRecord>> parse(File xmlFile) throws ParseException {
+    public List<BeerXMLRecordSet<BeerXMLRecord>> parse(InputStream xmlFile) throws ParseException {
         try {
             XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
-            XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(new FileReader(xmlFile));
+            XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(xmlFile);
 
             if (reader.getEventType() != XMLStreamConstants.START_ELEMENT) {
                 throw new XMLStreamException(
@@ -31,7 +32,7 @@ public class StAXParser implements BeerXMLParser {
             }
             walkTree(reader);
             return null;
-        } catch (XMLStreamException | FileNotFoundException ex) {
+        } catch (XMLStreamException ex ) {
             throw new ParseException(ex);
         }
     }

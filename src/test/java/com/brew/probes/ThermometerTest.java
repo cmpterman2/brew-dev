@@ -25,7 +25,7 @@ public class ThermometerTest {
     
     @BeforeClass
     public static void setUpClass() {
-        OneWireDevices.setDeviceDirectory(".\\src\\test\\resources\\probes\\");
+        OneWireDevices.setDeviceDirectory("./src/test/resources/probes");
     }
     
     @AfterClass
