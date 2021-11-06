@@ -7,6 +7,7 @@ package com.brew.devices;
 
 import com.brew.config.Configuration;
 import com.brew.gpio.Pin;
+import com.brew.gpio.PinManager;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
@@ -80,8 +81,8 @@ public class Fermenter implements Listener<TemperatureReading> {
         this.probe = Configuration.get().getFermenterProbe();
         this.airProbe = Configuration.get().getAirProbe();
         
-        this.coolPin = Pin.lookupPin(coolGpio);
-        this.heatPin = Pin.lookupPin(heatGpio);
+        this.coolPin = PinManager.lookupPin(coolGpio);
+        this.heatPin = PinManager.lookupPin(heatGpio);
         
         //Need different listeners ugh..
         OneWireMonitor.get().monitor(probe, this);

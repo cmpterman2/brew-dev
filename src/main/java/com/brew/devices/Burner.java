@@ -7,6 +7,7 @@ package com.brew.devices;
 
 import com.brew.config.Configuration;
 import com.brew.gpio.Pin;
+import com.brew.gpio.PinManager;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
@@ -59,7 +60,7 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
     public Burner() {
         this.gpio = Configuration.get().getBurnerGPIO();
         this.probe = Configuration.get().getBurnerProbe();
-        this.pin = Pin.lookupPin(gpio);
+        this.pin = PinManager.lookupPin(gpio);
         //Register thermometer too..
         OneWireMonitor.get().monitor(probe, this);
         config = new Config(0,0,Mode.OFF);

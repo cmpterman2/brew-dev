@@ -23,6 +23,8 @@ public class OneWireMonitor {
 
     private static final Logger LOG = LoggerFactory.getLogger(OneWireMonitor.class);
 
+    private static final boolean MOCK = (System.getProperty("mock") != null );
+
     private Map<String, Monitor> monitors = new HashMap();
     private static OneWireMonitor instance = new OneWireMonitor();
     private static final long MAX_WAIT = 5000;
@@ -44,7 +46,12 @@ public class OneWireMonitor {
 
                             //Read when necessary - may be more / less often depending on what is going on.  Retry?
                             if (currentTime >= monitor.getNextReadTime()) {
-                                TemperatureReading temp = OneWireDevices.readTemp(monitor.getProbe());
+                                TemperatureReading temp;
+                                if( MOCK ) {
+                                    temp = MockDevices.readTemp(monitor.getProbe());
+                                } else {
+                                    temp = OneWireDevices.readTemp(monitor.getProbe());
+                                }
 
                                 //long nextReadTime = currentTime;
                                 //if( temp.isValid()) {

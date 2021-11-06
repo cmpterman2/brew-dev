@@ -22,13 +22,17 @@ public class OneWireDevices {
     
     private static final Logger LOG = LoggerFactory.getLogger(OneWireDevices.class);
     
-    private static final String W1_DEVICES = "/sys/bus/w1/devices/";
+    private static final String W1_DEVICES = System.getProperty("mock", "") + "/sys/bus/w1/devices/";
     private static final String W1_SLAVE = "/w1_slave";
     
     private static String deviceDirectory = W1_DEVICES;
     
     private OneWireDevices() {
         
+    }
+
+    public static final String getFolder() {
+        return W1_DEVICES;
     }
     
     public static void setDeviceDirectory(String deviceDir) {

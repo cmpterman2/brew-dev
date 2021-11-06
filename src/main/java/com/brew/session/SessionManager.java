@@ -11,6 +11,23 @@ package com.brew.session;
  */
 public class SessionManager {
     
+    private Session session;
+
+
+
+    public SessionManager() {
+        //Temporary
+        session = new Session();
+        session.setBrewSession(new BrewSession());
+
+    }
+
+    public Session getCurrentSession() {
+        return this.session;
+    }
+
+
+
     
     
 }

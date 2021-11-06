@@ -7,6 +7,7 @@ package com.brew.rest;
 
 import com.brew.devices.BurnerData;
 import com.brew.recipe.Recipe;
+import com.brew.session.SessionManager;
 
 import java.io.InputStream;
 import javax.ws.rs.Consumes;
@@ -33,22 +34,26 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
  *
  * @author andrew.p.davis
  */
-@Path("/brew")
-public class BrewService {
+@Path("/recipe")
+public class RecipeService {
 
-	private Recipe recipe = null;
+	SessionManager sessionManager;
+
+    
+
+	
     
     //private List<BeerXMLRecordSet<BeerXMLRecord>> records = null;
     
 
-    public BrewService(){
-
+    public RecipeService(SessionManager sessionManager){
+		this.sessionManager = sessionManager;
     }
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Recipe getStringResource() {
-        return recipe;
+		return sessionManager.getCurrentSession().getRecipe();
     }
     
     @POST
@@ -75,9 +80,10 @@ public class BrewService {
 					BeerXMLRecord record = records.get(0);
 					if (record instanceof org.blh.beerxml.type.Recipe ){
 						org.blh.beerxml.type.Recipe bRecipe = (org.blh.beerxml.type.Recipe) record;
-						recipe = new Recipe();
+						Recipe recipe = new Recipe();
 						recipe.setName(bRecipe.getName());
 
+						sessionManager.getCurrentSession().setRecipe(recipe);
 
 						status = Response.Status.OK;
 					}

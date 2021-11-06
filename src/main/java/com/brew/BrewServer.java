@@ -8,12 +8,17 @@ package com.brew;
 import com.brew.config.Configuration;
 import com.brew.devices.Burner;
 import com.brew.devices.Fermenter;
+import com.brew.gpio.Pin;
+import com.brew.mock.Mocker;
+import com.brew.probes.OneWireDevices;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
-import com.brew.rest.BrewService;
+import com.brew.rest.RecipeService;
 import com.brew.rest.BurnerService;
 import com.brew.rest.ConfigService;
 import com.brew.rest.FermenterService;
+import com.brew.rest.SessionService;
+import com.brew.session.SessionManager;
 import com.brew.websocket.WebSocketNotifier;
 import com.brew.websocket.WebSocketServlet;
 import org.eclipse.jetty.server.Handler;
@@ -46,8 +51,25 @@ public class BrewServer {
     public static void main(String[] args) {
         
         LOG.info("Starting Main application");
-        
+
         Configuration.load();
+        
+        if( System.getProperty("root") != null ) {
+            LOG.info("Using alternate root: "+System.getProperty("root"));
+
+
+            LOG.info("One Wire Folder: "+OneWireDevices.getFolder());
+
+            
+        }
+
+        if( System.getProperty("mock") != null ) {
+            LOG.info("Running Mock Mode");
+            Mocker.init();
+            Mocker.runMocker();
+        }
+        
+       
         
         //If burner configured, create it..?
         Burner burner = null;
@@ -109,12 +131,18 @@ public class BrewServer {
         BurnerService burnerService = new BurnerService(burner);
         FermenterService fermenterService = new FermenterService(fermenter);
 
+        SessionManager sessionManager = new SessionManager();
+
         ResourceConfig rc = new ResourceConfig();
         rc.register(burnerService);
         rc.register(fermenterService);
         rc.register(MultiPartFeature.class);
-        rc.register(new BrewService());
+
         rc.register(new ConfigService());
+
+        // SessionService sessionService = new SessionService();
+        rc.register(new RecipeService(sessionManager));
+        rc.register(new SessionService(sessionManager));
 
         ServletContainer sc = new ServletContainer(rc);
 //

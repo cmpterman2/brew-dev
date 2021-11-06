@@ -29,7 +29,7 @@ public class TemperatureReading {
         return df.format(calculateTempInF());
     }
 
-    protected float getTempInC() {
+    public float getTempInC() {
         return this.tempInC;
     }
     
@@ -39,6 +39,10 @@ public class TemperatureReading {
     
     public long getReadTime() {
         return readTime;
+    }
+
+    public String getProbe() {
+        return probe;
     }
     
     public String toString() {

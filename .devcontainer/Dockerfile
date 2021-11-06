@@ -43,6 +43,11 @@ ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG /root/.m2
 #-------------------------------------------------------------------------------------------------------------
 
+RUN mkdir -p /usr/share/jdk11 \
+  && curl -fsSL -o /tmp/jdk11.tar.gz https://github.com/AdoptOpenJDK/openjdk11-upstream-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_11.0.13_8.tar.gz \
+  && tar -xzf /tmp/jdk11.tar.gz -C /usr/share/jdk11 --strip-components=1 \
+  && rm -f /tmp/jdk11.tar.gz 
+
 #-------------------Uncomment the following steps to install Gradle CLI Tools---------------------------------
 # ENV GRADLE_HOME /opt/gradle
 # ENV GRADLE_VERSION 5.4.1

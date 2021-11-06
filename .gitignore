@@ -1,2 +1,5 @@
 /target/
 /nbproject/
+/archived/
+app.log
+error.log

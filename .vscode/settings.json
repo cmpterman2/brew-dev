@@ -1,0 +1,4 @@
+{
+    // "java.home" : "C:/dev/jdk-11.0.12"
+    "java.home" : "/usr/share/jdk11"
+}
