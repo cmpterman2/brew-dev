@@ -8,6 +8,7 @@ package com.brew.devices;
 import com.brew.config.Configuration;
 import com.brew.gpio.Pin;
 import com.brew.gpio.PinManager;
+import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
@@ -50,8 +51,8 @@ public class Burner implements Runnable, Listener<TemperatureReading> {
     }
 
     @Override
-    public void notify(TemperatureReading notification) {
-        lastReading = notification;
+    public void notify(Event<TemperatureReading> event) {
+        lastReading = event.getData();
         //Call update to process configuration
         //Call with null to avoid timing issues
         this.update(null);

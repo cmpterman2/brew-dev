@@ -9,8 +9,8 @@ package com.brew.notify;
  *
  * @author andrew.p.davis
  */
-public interface Listener <K>{
+public interface Listener<K> {
     
-    public void notify(K notification);
+    public void notify(Event<K> e);
     
 }

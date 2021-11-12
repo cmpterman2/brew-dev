@@ -6,7 +6,13 @@
 package com.brew.rest;
 
 import com.brew.session.SessionManager;
+import com.brew.fermenter.FermenterConfig;
+import com.brew.fermenter.FermenterState;
+import com.brew.notify.Event;
 import com.brew.session.BrewSession;
+
+import java.util.List;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -36,6 +42,25 @@ public class SessionService {
             return sessionManager.getCurrentSession().getBrewSession();
         } else return null;
         
+    }
+
+
+    @GET
+    @Path("/history/fermenter/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Event<FermenterConfig>> getConfigHistory() {
+        if( sessionManager.getCurrentSession() != null ) {
+            return sessionManager.getCurrentSession().getFermenterConfigHistory();
+        } else return null;
+    }
+
+    @GET
+    @Path("/history/fermenter/state")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Event<FermenterState>> getStateHistory() {
+        if( sessionManager.getCurrentSession() != null ) {
+            return sessionManager.getCurrentSession().getFermenterStateHistory();
+        } else return null;
     }
 
     // @POST

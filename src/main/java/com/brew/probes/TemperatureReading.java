@@ -5,6 +5,7 @@
  */
 package com.brew.probes;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 
 /**
@@ -34,6 +35,14 @@ public class TemperatureReading {
     }
     
     public float calculateTempInF() {
+        return calculateTempInF(1);
+    }
+
+    public float calculateTempInF(int decimalPlace) {
+        return round(calculateFullTempInF(), decimalPlace); 
+    }
+
+    public float calculateFullTempInF() {
         return this.tempInC*9.0f/5.0f + 32.0f;
     }
     
@@ -47,6 +56,25 @@ public class TemperatureReading {
     
     public String toString() {
         return "Temp ("+probe+"): "+getDisplayTemp()+"F";
+    }
+
+
+    public static float round(float value, int scale) {
+        int pow = 10;
+        for (int i = 1; i < scale; i++) {
+            pow *= 10;
+        }
+        float tmp = value * pow;
+        float tmpSub = tmp - (int) tmp;
+    
+        return ( (float) ( (int) (
+                value >= 0
+                ? (tmpSub >= 0.5f ? tmp + 1 : tmp)
+                : (tmpSub >= -0.5f ? tmp : tmp - 1)
+                ) ) ) / pow;
+    
+        // Below will only handles +ve values
+        // return ( (float) ( (int) ((tmp - (int) tmp) >= 0.5f ? tmp + 1 : tmp) ) ) / pow;
     }
     
 }

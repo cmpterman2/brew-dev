@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.brew.devices;
+package com.brew.fermenter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -15,6 +15,15 @@ public class Entry {
     private float day;
     private float target;
 
+
+    public Entry() {
+
+    }
+
+    public Entry(float day, float target) {
+        this.day = day;
+        this.target = target;
+    }
     /**
      * @return the day
      */

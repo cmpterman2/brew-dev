@@ -5,12 +5,11 @@
  */
 package com.brew.probes;
 
+import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.notify.Notifier;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,13 +87,13 @@ public class OneWireMonitor {
             monitors.put(probe, monitor);
         }
 
-        monitor.addListener(listener);
+        Notifier.registerListener(probe, listener);
+        //monitor.addListener(listener);
     }
 
     private class Monitor {
 
         private String probe;
-        private List<Listener> listeners;
         private TemperatureReading lastTemp;
         private LinkedList<TemperatureReading> history = new LinkedList();
         private long nextReadTime;
@@ -125,19 +124,12 @@ public class OneWireMonitor {
 
         public Monitor(String probe) {
             this.probe = probe;
-            listeners = new ArrayList();
             lastTemp = null;
             nextReadTime = 0L;
         }
 
         public long getNextReadTime() {
             return nextReadTime;
-        }
-
-        public void addListener(Listener listener) {
-            if (!listeners.contains(listener)) {
-                listeners.add(listener);
-            }
         }
 
         public void addTemperatureReading(TemperatureReading reading) {
@@ -159,7 +151,7 @@ public class OneWireMonitor {
                 addToHistory(reading);
                 
                 if (shouldNotify(reading)) {
-                    Notifier.notifyListeners(listeners, reading);
+                    Notifier.notifyListeners(new Event<TemperatureReading>(probe, reading));
                     lastTemp = reading;
                 } else if (isDifferent(reading)){
                     nextReadTime = reading.getReadTime() + 1000;

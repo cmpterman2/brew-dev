@@ -1,10 +1,9 @@
 package com.brew.notify;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -12,56 +11,38 @@ import java.util.logging.Logger;
 public class Notifier {
     
     private static final int THREAD_POOL_SIZE = 10;
-    
-    private static final Notifier instance = new Notifier();
     private static final ExecutorService pool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-    private static final List tempListeners = new ArrayList();
-    
-    private Notifier() {
-        
+
+    private static final HashMap<String, List<Listener>> listenerMap = new HashMap<String, List<Listener>>();
+
+
+
+    public static synchronized void registerListener(String type, Listener listener) {
+        List<Listener> listeners = listenerMap.get(type);
+        if( listeners == null ) {
+            listeners = new ArrayList<Listener>();
+            listenerMap.put(type, listeners);
+        }
+
+        //Double check for duplicates
+        if (!listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+
     }
-    
-    public static synchronized void notifyListeners(List<Listener> listeners, Object notification)
+
+    public static synchronized void notifyListeners(Event event)
     {
-        listeners.stream().map((listener) -> new Runnable() {
-            public void run() {
-                listener.notify(notification);
-            }
-        }).forEachOrdered((task) -> {
-            pool.execute(task );
-        });
-    }
-    
-    //Do we want to call notify with the last value?  
-    public static synchronized void registerListener(Object listener) {
-        tempListeners.add(listener);
-    }
-    
-    public static void notifyTempChange(String id, float temp){
-        for (Object tempListener : tempListeners) {
-            Runnable task = new Runnable() {
+        List<Listener> listeners = listenerMap.get(event.getType());
+        if( listeners != null ) {
+            listeners.stream().map((listener) -> new Runnable() {
                 public void run() {
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(Notifier.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    System.out.println(tempListener.toString());
+                    listener.notify(event);
                 }
-            };
-            pool.execute(task );
+            }).forEachOrdered((task) -> {
+                pool.execute(task );
+            });
         }
-    }
-    
-    
-    private class notifyTask implements Runnable {
-        
-        
-        public void run()
-        {
-           
-        }
-    }
-            
+    }      
             
 }

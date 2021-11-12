@@ -18,7 +18,7 @@ public class WebSocket extends WebSocketAdapter
     private static final List<WebSocket> connections = new ArrayList<>();
    
     public WebSocket() {
-        System.out.println("Constructor");
+        //System.out.println("Constructor");
     }
     
     public static List<WebSocket> getConnections() {
@@ -36,7 +36,7 @@ public class WebSocket extends WebSocketAdapter
         synchronized( connections ) {
             connections.add(this);
         }
-        System.out.println("Socket Connected: " + sess);
+        //System.out.println("Socket Connected: " + sess);
     }
     
     @Override
@@ -50,7 +50,7 @@ public class WebSocket extends WebSocketAdapter
                 Logger.getLogger(WebSocket.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        System.out.println("Received TEXT message: " + message);
+        //System.out.println("Received TEXT message: " + message);
     }
     
     @Override
@@ -60,7 +60,7 @@ public class WebSocket extends WebSocketAdapter
             connections.remove(this);
         }
         super.onWebSocketClose(statusCode,reason);
-        System.out.println("Socket Closed: [" + statusCode + "] " + reason);
+        //System.out.println("Socket Closed: [" + statusCode + "] " + reason);
     }
     
     @Override

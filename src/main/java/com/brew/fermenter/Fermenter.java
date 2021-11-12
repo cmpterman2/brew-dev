@@ -3,35 +3,33 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.brew.devices;
+package com.brew.fermenter;
 
 import com.brew.config.Configuration;
 import com.brew.gpio.Pin;
 import com.brew.gpio.PinManager;
+import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
-import java.text.NumberFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.ArrayList;
 
 /**
  *
  * @author andrew.p.davis
  */
-public class Fermenter implements Listener<TemperatureReading> {
+public class Fermenter {
+
+    public static final String EVENT_FERM_STATE = "FERM.STATE";
+    public static final String EVENT_FERM_CONFIG = "FERM.CONFIG";
     
     private static final Logger LOG = LoggerFactory.getLogger(Fermenter.class);
     
-    private Config config;
-    private String heatGpio;
-    private String coolGpio;
-    
-    private String probe;
-    private String airProbe;
-    
-    private State state = State.OFF;
+    private FermenterConfig config;
+    private FermenterState state;
+    private boolean changedState = false;
+
     private static final long COOLING_WAIT = 1000*60*5; //5 Minutes
     private static final long COOLING_MIN = 1000*60*5; //5 Minutes
     private static final long COOLING_MAX= 1000*60*10; //10 Minutes
@@ -39,18 +37,6 @@ public class Fermenter implements Listener<TemperatureReading> {
     //private ScheduleThread scheduleThread;
 
     private static final long DAY = 1000*60*60*24;
-    private long scheduleStart = -1L;
-    
-
-    enum State {
-        COOLING, HEATING, DELAY_COOLING, OFF
-    }
-
-    private TemperatureReading lastReading;
-    private TemperatureReading airLastReading;
-
-    private ArrayList<Listener> targetListeners = new ArrayList();
-    private ArrayList<Listener> stateListeners = new ArrayList();
     
     private static final float COOL_THRESHOLD = .5f;
     private static final float HEAT_THRESHOLD = -.1f;
@@ -67,7 +53,7 @@ public class Fermenter implements Listener<TemperatureReading> {
         try {
             Thread.sleep(30000);
             for(;;Thread.sleep(30000)) {
-                update(null, null);
+                update(null);
             }
         } catch (Exception e ) {}
     });
@@ -76,84 +62,68 @@ public class Fermenter implements Listener<TemperatureReading> {
     
     
     public Fermenter() {
-        this.heatGpio = Configuration.get().getHeatGPIO();
-        this.coolGpio = Configuration.get().getCoolGPIO();
-        this.probe = Configuration.get().getFermenterProbe();
-        this.airProbe = Configuration.get().getAirProbe();
+        this.coolPin = PinManager.lookupPin(Configuration.get().getCoolGPIO());
+        this.heatPin = PinManager.lookupPin(Configuration.get().getHeatGPIO());
         
-        this.coolPin = PinManager.lookupPin(coolGpio);
-        this.heatPin = PinManager.lookupPin(heatGpio);
-        
-        //Need different listeners ugh..
-        OneWireMonitor.get().monitor(probe, this);
-        OneWireMonitor.get().monitor(airProbe, (Listener<TemperatureReading>) (TemperatureReading notification) -> {
-            notifyAir(notification);
+        //Listen for ferm and air changes
+        OneWireMonitor.get().monitor(Configuration.get().getFermenterProbe(), (Listener<TemperatureReading>) (Event<TemperatureReading> event) -> {
+            updateFermTemp(event.getData());
         });
+
+        OneWireMonitor.get().monitor(Configuration.get().getAirProbe(), (Listener<TemperatureReading>) (Event<TemperatureReading> event) -> {
+            updateAirTemp(event.getData());
+        });
+
+        config = new FermenterConfig();
+        state = new FermenterState();
+        state.setTarget(config.calculatePitchTarget());
         
         pokeThread.setDaemon(true);
         pokeThread.start();
-        
-        
-        
-        config = new Config(0,0,Mode.OFF);
     }
 
-    public void addTargetListener(Listener listener) {
-        if (!targetListeners.contains(listener)) {
-            targetListeners.add(listener);
-        }
+
+
+    public FermenterState getState() {
+        return state.duplicate();
     }
 
-    public void addStateListener(Listener listener) {
-        if (!stateListeners.contains(listener)) {
-            stateListeners.add(listener);
-        }
+    public FermenterConfig getConfig() {
+        return config.duplicate();
     }
-    
     
      //If null - just use current config, but re-process..
-    public synchronized void update(Config newConfig, String source) {
-
-        State oldState = this.state;
-        float oldTarget = this.config.getTarget();
+    public synchronized void update(FermenterConfig newConfig) {
 
         //Is this a configuration change?
-        if( newConfig != null ) {
-            //Validate source is schedule thread to make sure it only changes the target and doesn't overwrite something else.
-            if( Mode.SCHEDULE.toString().equals(source) && ! config.compare(newConfig) ) {
-                LOG.warn("Avoided configuration overwrite from schedule thread");
-            }
-            else {
-                LOG.info("Updating configuration: {}", this.config);
-                this.config = newConfig;
-            }
+        if( newConfig != null && !newConfig.compare(config) ) {
+            LOG.info("Updating configuration: {}", newConfig);
+            this.config = newConfig;
+
+            //NOTIFY
+            com.brew.notify.Notifier.notifyListeners(new Event<FermenterConfig> (EVENT_FERM_CONFIG, this.config.duplicate()));
         }
-
-        
-
 
         if (this.config != null) {
             
             switch (config.getMode()) {
                 case SCHEDULE: {
 
-                    if( scheduleStart <= 0 ) {
-                        scheduleStart = System.currentTimeMillis();
+                    if( state.getScheduleStart() <= 0 ) {
+                        updateScheduleStart(System.currentTimeMillis());
                     }
 
                     //Need to calculate target for right now.
-                    //config.setTarget(0f);
                     float newTarget = calculateScheduleTarget();
-                    //Start thread
-                    config.setTarget(newTarget);
-
-
+                    updateTarget(newTarget);
 
                     //fall through to auto since it should go to auto
                 }
-                case AUTO:
-                    if (this.lastReading != null) {
-                        float diff = lastReading.calculateTempInF() - config.getTarget();
+                case TARGET_PITCH:
+                    updateTarget(config.calculatePitchTarget());
+                    
+                    if (state.getFermTemp() != Float.NaN) {
+                        float diff = state.getFermTemp() - state.getTarget();
                         if (diff > COOL_THRESHOLD) {
                             cool();
                         } else if (diff < HEAT_THRESHOLD){
@@ -165,77 +135,81 @@ public class Fermenter implements Listener<TemperatureReading> {
                         off();
                     }
                     break;
+                case OFF:
+                    //Reset the schedule only on off
+                    updateScheduleStart(-1l);
+                    updateTarget(config.calculatePitchTarget());
+                    //Fall through to next case
                 default: //Handle OFF and for other unsupported cases.
-                    scheduleStart = -1l;
                     off();
                     break;
 
             }
         }
 
-        if( this.state != oldState) {
-            com.brew.notify.Notifier.notifyListeners(stateListeners, this.state);
-        }
-
-        if( this.config.getTarget() != oldTarget ) {
-            com.brew.notify.Notifier.notifyListeners(targetListeners, this.config.getTarget());
+        if( changedState ) {
+            //State change..
+            changedState = false;
+            com.brew.notify.Notifier.notifyListeners(new Event<FermenterState>(EVENT_FERM_STATE, this.state.duplicate()));
+            
         }
     }
+
     
-    private void transition(State prior, State newState) {
-        LOG.info("Fermenter transition: {} -> {}", prior,newState);
-        if( prior == State.COOLING ) {
+    
+    private void transition(FermenterState.DeviceState newState) {
+        LOG.info("Fermenter transition: {} -> {}", state.getDeviceState(),newState);
+        if( state.getDeviceState() == FermenterState.DeviceState.COOLING ) {
             coolStop =  System.currentTimeMillis();
         }
         
         switch (newState) {
-            case DELAY_COOLING: 
-                state = State.DELAY_COOLING;
+            case COOLING_DELAY: 
                 coolStart = 0;
                 heatPin.turnOff();
                 coolPin.turnOff();
                 break;
             case COOLING: 
-                state = State.COOLING;
                 coolStart = System.currentTimeMillis();
                 heatPin.turnOff();
                 coolPin.turnOn();
                 break;
             case HEATING: 
-                state = State.HEATING;
                 coolStart = 0;
                 heatPin.turnOn();
                 coolPin.turnOff();
                 break;
             case OFF:
-                state = State.OFF;
                 coolStart = 0;
                 heatPin.turnOff();
                 coolPin.turnOff();
                 break;
         }
+
+        updateState(newState);
+        
     }
     
     private void cool() {
-        switch (state) {
-            case DELAY_COOLING: //Eventually transition to cooling
+        switch (state.getDeviceState()) {
+            case COOLING_DELAY: //Eventually transition to cooling
                 //Check to see if time has passed so we can transition to cooling.
                 if( System.currentTimeMillis() - coolStop > COOLING_WAIT ) {
-                    transition(state, State.COOLING);
+                    transition(FermenterState.DeviceState.COOLING);
                 }
                 break;
             case COOLING: //Make sure we don't run for too long
                 if( System.currentTimeMillis() - coolStart > COOLING_MAX) {
-                    transition(state, State.DELAY_COOLING);
+                    transition(FermenterState.DeviceState.COOLING_DELAY);
                 }
                 break;
             case HEATING: //Turn the cooling on!
             case OFF: {
-                //Check for delay! --> DELAY_COOLING
+                //Check for delay! --> COOLING_DELAY
                 if( System.currentTimeMillis() - coolStop < COOLING_WAIT ) {
-                    transition(state, State.DELAY_COOLING);
+                    transition(FermenterState.DeviceState.COOLING_DELAY);
                 } else {
-                    transition(state, State.COOLING);
+                    transition(FermenterState.DeviceState.COOLING);
                 }
                 break;
             }
@@ -243,46 +217,43 @@ public class Fermenter implements Listener<TemperatureReading> {
     }
     
     private void heat() {
-        switch (state) {
+        switch (state.getDeviceState()) {
             case OFF: 
-            case DELAY_COOLING: //Eventually transition to cooling
-                transition(state, State.HEATING);
+            case COOLING_DELAY: //Eventually transition to cooling
+                transition(FermenterState.DeviceState.HEATING);
                 break;
             case COOLING: 
                 //Switch to heating (maybe)...
                 if( System.currentTimeMillis() - coolStart > COOLING_MIN) {
-                    transition(state, State.HEATING);
+                    transition(FermenterState.DeviceState.HEATING);
    
                 } else {
                     //TODO - don't turn off cooling too soon ... unless target temp has changed..
-                    //transition(state, State.HEATING);
+                    //transition(FermenterState.State.HEATING);
                 }
                 
                 
                 break;
         }
-        if( state != State.HEATING ) {
-            
-        }
     }
     
     private void off() {
         //Transition anyways?
-        if( state != State.OFF ) {
-            transition(state, State.OFF);
+        if( state.getDeviceState() != FermenterState.DeviceState.OFF ) {
+            transition(FermenterState.DeviceState.OFF);
         }
     }
     
     private void middle() {
-        switch (state) {
+        switch (state.getDeviceState()) {
             case HEATING: 
-            case DELAY_COOLING: //Eventually transition to cooling
-                transition(state, State.OFF);
+            case COOLING_DELAY: //Eventually transition to cooling
+                transition(FermenterState.DeviceState.OFF);
                 break;
             case COOLING: 
                 //don't turn off cooling too soon
                 if( System.currentTimeMillis() - coolStart > COOLING_MIN) {
-                    transition(state, State.OFF);
+                    transition(FermenterState.DeviceState.OFF);
                 } 
                 break;
             case OFF: {
@@ -292,22 +263,45 @@ public class Fermenter implements Listener<TemperatureReading> {
         }
     }
     
-    public void notifyAir(TemperatureReading notification){
-        this.airLastReading = notification;
+    void updateAirTemp(TemperatureReading notification){
+        if( state.getAirTemp() == Float.NaN || state.getAirTemp() != notification.calculateTempInF() ){
+            state.setAirTemp(notification.calculateTempInF());
+            changedState = true;
+        }
     }
 
-    @Override
-    public void notify(TemperatureReading notification) {
-        this.lastReading = notification;
+    void updateFermTemp(TemperatureReading notification) {
+        if( state.getFermTemp() == Float.NaN || state.getFermTemp() != notification.calculateTempInF() ){
+            state.setFermTemp(notification.calculateTempInF());
+            changedState = true;
+        }
+    }
+
+    private void updateTarget(float target) {
+        if (state.getTarget() != target ){
+            changedState = true;
+            state.setTarget(target);
+        }
+    }
+
+    private void updateState(FermenterState.DeviceState newState) {
+        if (this.state.getDeviceState() != newState ){
+            changedState = true;
+            state.setDeviceState(newState);
+        }
+    }
+
+    private void updateScheduleStart(long scheduleStart) {
+        if( this.state.getScheduleStart() != scheduleStart ){
+            changedState = true;
+            state.setScheduleStart(scheduleStart);
+        }
     }
     
-    public FermenterData getFermenterData() {
-        return new FermenterData(heatGpio, coolGpio, probe, airProbe, config, lastReading, airLastReading, state, scheduleStart);
-    }
-    
-   public float calculateScheduleTarget()
+        
+   private float calculateScheduleTarget()
    {
-       float days = (float) (System.currentTimeMillis() - this.scheduleStart) / DAY;
+       float days = (float) (System.currentTimeMillis() - this.state.getScheduleStart()) / DAY;
 
        Entry priorEntry = null;
        Entry currentEntry = null;
@@ -323,9 +317,9 @@ public class Fermenter implements Listener<TemperatureReading> {
            }
        }
 
-       if (currentEntry == null ) {
-           return config.getTarget();
-       }
+    //    if (currentEntry == null ) {
+    //        return config.getTarget();
+    //    }
 
        //If prior two points have same target, slope dat shit
        if( priorEntry != null && currentEntry != null ) {

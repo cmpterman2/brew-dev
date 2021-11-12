@@ -10,6 +10,7 @@ import com.brew.devices.Burner;
 import com.brew.devices.Config;
 import com.brew.devices.Mode;
 import com.brew.gpio.Pin;
+import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.probes.OneWireDevices;
 import com.brew.probes.OneWireMonitor;
@@ -46,8 +47,8 @@ public class Main {
         for (String probe : probes) {
             OneWireMonitor.get().monitor(probe, new Listener<TemperatureReading>(){
                 @Override
-                public void notify(TemperatureReading notification) {
-                    LOG.info("Received Notification: {}", notification);
+                public void notify(Event<TemperatureReading> event) {
+                    LOG.info("Received Notification: {}", event);
                 }
             });
         }

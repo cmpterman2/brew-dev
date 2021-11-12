@@ -7,8 +7,10 @@ package com.brew.rest;
 
 import com.brew.devices.Burner;
 import com.brew.devices.Config;
-import com.brew.devices.Fermenter;
-import com.brew.devices.FermenterData;
+import com.brew.fermenter.Fermenter;
+import com.brew.fermenter.FermenterConfig;
+import com.brew.fermenter.FermenterState;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -30,17 +32,53 @@ public class FermenterService {
     }
     
     @GET
+    @Path("/state")
     @Produces(MediaType.APPLICATION_JSON)
-    public FermenterData getStringResource() {
-        return fermenter.getFermenterData();
+    public FermenterState getState() {
+        return fermenter.getState();
+    }
+
+    @GET
+    @Path("/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public FermenterConfig getConfig() {
+        return fermenter.getConfig();
+    }
+
+    //Combined object
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Data getStringResource() {
+        Data data = new Data();
+        data.setConfig(fermenter.getConfig());
+        data.setState(fermenter.getState());
+        return data;
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response putStringResource(Config config) {
+    public Response putStringResource(FermenterConfig config) {
         //ObjectMapper mapper = new ObjectMapper();
         //this.resource.setResource(json.getResource());
-        fermenter.update(config, null);
+        fermenter.update(config);
         return Response.status(Response.Status.OK).build();
+    }
+
+
+    public class Data {
+        private FermenterState state;
+        private FermenterConfig config;
+        public FermenterState getState() {
+            return state;
+        }
+        public FermenterConfig getConfig() {
+            return config;
+        }
+        public void setConfig(FermenterConfig config) {
+            this.config = config;
+        }
+        public void setState(FermenterState state) {
+            this.state = state;
+        }
     }
 }

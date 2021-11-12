@@ -7,9 +7,12 @@ package com.brew;
 
 import com.brew.config.Configuration;
 import com.brew.devices.Burner;
-import com.brew.devices.Fermenter;
+import com.brew.fermenter.Fermenter;
+import com.brew.fermenter.FermenterConfig;
+import com.brew.fermenter.FermenterState;
 import com.brew.gpio.Pin;
 import com.brew.mock.Mocker;
+import com.brew.notify.Notifier;
 import com.brew.probes.OneWireDevices;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
@@ -45,8 +48,8 @@ public class BrewServer {
     static WebSocketNotifier burnerNotifier;
     static WebSocketNotifier fermNotifier;
     static WebSocketNotifier airNotifier;
-    static WebSocketNotifier targetNotifier;
-    static WebSocketNotifier stateNotifier;
+    static WebSocketNotifier<FermenterState> fermStateNotifier;
+    static WebSocketNotifier<FermenterConfig> fermConfigNotifier;
 
     public static void main(String[] args) {
         
@@ -81,20 +84,23 @@ public class BrewServer {
         
         //If ferm configured, create it too?
         
-        burnerNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "burner");
-        OneWireMonitor.get().monitor(Configuration.get().getBurnerProbe(), burnerNotifier);
+        // burnerNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "burner");
+        // OneWireMonitor.get().monitor(Configuration.get().getBurnerProbe(), burnerNotifier);
         
-        fermNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "ferm");
-        OneWireMonitor.get().monitor(Configuration.get().getFermenterProbe(), fermNotifier);
+        // fermNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "ferm");
+        // OneWireMonitor.get().monitor(Configuration.get().getFermenterProbe(), fermNotifier);
         
-        airNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "air");
-        OneWireMonitor.get().monitor(Configuration.get().getAirProbe(), airNotifier);
+        // airNotifier = new WebSocketNotifier<TemperatureReading>("TEMP", "air");
+        // OneWireMonitor.get().monitor(Configuration.get().getAirProbe(), airNotifier);
 
-        targetNotifier = new WebSocketNotifier<TemperatureReading>("TARGET", "");
-        fermenter.addTargetListener(targetNotifier);
 
-        stateNotifier = new WebSocketNotifier<TemperatureReading>("STATE", "");
-        fermenter.addStateListener(stateNotifier);
+
+        fermStateNotifier = new WebSocketNotifier<FermenterState>();
+        Notifier.registerListener(Fermenter.EVENT_FERM_STATE, fermStateNotifier);
+
+
+        fermConfigNotifier = new WebSocketNotifier<FermenterConfig>();
+        Notifier.registerListener(Fermenter.EVENT_FERM_STATE, fermConfigNotifier);
         
         
         // Jetty / Web Server  //
@@ -132,6 +138,9 @@ public class BrewServer {
         FermenterService fermenterService = new FermenterService(fermenter);
 
         SessionManager sessionManager = new SessionManager();
+
+        //TODO - temporary for testing..
+        sessionManager.startNewSession();
 
         ResourceConfig rc = new ResourceConfig();
         rc.register(burnerService);

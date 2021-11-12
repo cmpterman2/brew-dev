@@ -1,0 +1,1 @@
+java -Dmock=true -jar target/brew-all.jar

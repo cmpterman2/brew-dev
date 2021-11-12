@@ -5,8 +5,8 @@
  */
 package com.brew.websocket;
 
+import com.brew.notify.Event;
 import com.brew.notify.Listener;
-import com.brew.probes.OneWireMonitor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -19,22 +19,22 @@ import java.util.logging.Logger;
  */
 public class WebSocketNotifier<K> implements Listener<K>{
     
-    private String type;
-    private String id;
+    // private String type;
+    // private String id;
     
-    public WebSocketNotifier(String type, String id) {
-        this.type = type;
-        this.id = id;
-    }
+    // public WebSocketNotifier(String type, String id) {
+    //     this.type = type;
+    //     this.id = id;
+    // }
 
     @Override
-    public void notify(K data) {
+    public void notify(Event<K> event) {
         //Need to include the probe ID
-        Message message = new Message(type, id, data);
+        // Message message = new Message(type, id, data);
         ObjectMapper mapper = new ObjectMapper();
         String json=null;
         try {
-            json = mapper.writeValueAsString(message);
+            json = mapper.writeValueAsString(event);
         } catch (JsonProcessingException ex) {
             Logger.getLogger(WebSocketNotifier.class.getName()).log(Level.SEVERE, null, ex);
         }
