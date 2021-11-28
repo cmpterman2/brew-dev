@@ -19,7 +19,7 @@ import com.brew.recipe.Recipe;
  */
 public class Session {
 
-    private BrewSession brewSession;
+    private SessionConfig config;
     private Recipe recipe;
 
 
@@ -30,12 +30,18 @@ public class Session {
     private List<Event<FermenterConfig>> fermenterConfigHistory = new ArrayList<Event<FermenterConfig>>();
     
 
-    public BrewSession getBrewSession() {
-        return brewSession;
-    }
+    
 
     public List<Event<FermenterConfig>> getFermenterConfigHistory() {
         return fermenterConfigHistory;
+    }
+
+    public SessionConfig getConfig() {
+        return config;
+    }
+
+    public void setConfig(SessionConfig config) {
+        this.config = config;
     }
 
     public void setFermenterConfigHistory(List<Event<FermenterConfig>> fermenterConfigHistory) {
@@ -58,9 +64,6 @@ public class Session {
         this.recipe = recipe;
     }
 
-    public void setBrewSession(BrewSession brewSession) {
-        this.brewSession = brewSession;
-    }
 
     public void addFermState(Event<FermenterState> event) {
         this.fermenterStateHistory.add(event);

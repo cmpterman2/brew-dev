@@ -38,15 +38,22 @@ class FilePin implements Pin {
    
     private int number;
     private String valuePath;
+    private boolean pinOn = false;
 
-    public void turnOn() {
-        LOG.debug("ON: {}", number);
-        writeValue("1");
+    public synchronized void turnOn() {
+        if( !pinOn ) {
+            LOG.debug("ON: {}", number);
+            pinOn = true;
+            writeValue("1");
+        }
     }
 
-    public void turnOff() {
-        LOG.debug("OFF: {}", number);
-        writeValue("0");
+    public synchronized void turnOff() {
+        if( pinOn ) {
+            LOG.debug("OFF: {}", number);
+            pinOn = false;
+            writeValue("0");
+        }
     }
 
     //TODO - FIX THIS

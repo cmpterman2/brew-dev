@@ -5,20 +5,30 @@
  */
 package com.brew.session;
 
+import com.brew.brewpot.BrewPot;
+import com.brew.brewpot.BrewPotConfig;
+import com.brew.brewpot.BrewPotConfig.Mode;
 import com.brew.fermenter.Fermenter;
 import com.brew.fermenter.FermenterConfig;
 import com.brew.fermenter.FermenterState;
 import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.notify.Notifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author andrew.p.davis
  */
 public class SessionManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SessionManager.class);
     
     private Session session;
+    private BrewPot brewPot;
+
+    public static final String EVENT_SESSION_CONFIG = "SESSION.CONFIG";
 
 
 
@@ -28,9 +38,20 @@ public class SessionManager {
 
     }
 
+    public BrewPot getBrewPot() {
+        return brewPot;
+    }
+
+    public void setBrewPot(BrewPot brewPot) {
+        this.brewPot = brewPot;
+    }
+
     public void startNewSession() {
         session = new Session();
-        session.setBrewSession(new BrewSession());
+        session.setConfig(new SessionConfig());
+        session.getConfig().setPhase(SessionConfig.Phase.RECIPE);
+        session.getConfig().setMode(SessionConfig.Mode.PAUSED);
+        session.getConfig().setPhaseTime(System.currentTimeMillis());
 
         //Register listeners or do it when the state changes..?
         //Add for now for testing -- Might need to save these off if we ever want to de-register..
@@ -45,11 +66,91 @@ public class SessionManager {
 
     }
 
-    
-
     public Session getCurrentSession() {
         return this.session;
     }
+
+
+    
+    public synchronized void updateConfig(SessionConfig newConfig) {
+
+        SessionConfig oldConfig = this.session.getConfig();
+
+        //Is this a configuration change?
+        if( newConfig != null && !newConfig.compare(oldConfig) ) {
+            LOG.info("Updating configuration: {} --> {}", oldConfig, newConfig);
+            session.setConfig(newConfig);
+            session.getConfig().setPhaseTime(System.currentTimeMillis());
+
+            //NOTIFY
+            com.brew.notify.Notifier.notifyListeners(new Event<SessionConfig> (EVENT_SESSION_CONFIG, this.session.getConfig().duplicate()));
+        }
+
+
+        //Apply configuration change to burner
+        
+        if( session.getConfig().getMode() == SessionConfig.Mode.ACTIVE ) {
+
+            switch( session.getConfig().getPhase()) {
+                case BREW_PREMASH : {
+                    //Burner Target 
+                    //TODO LOAD THIS FROM RECIPE
+                    brewPot.updateConfig(new BrewPotConfig(162.9f, BrewPotConfig.Mode.HIGH));
+                    break;
+                }
+                case BREW_MASH : {
+                    //Burner Target and Low Duty
+                    brewPot.updateConfig(new BrewPotConfig(155f, BrewPotConfig.Mode.LOW));
+                    break;
+                }
+                case BREW_PREBOIL : {
+                    //Burner ON 
+                    brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.HIGH));
+                    break;
+                }
+                case BREW_BOIL : {
+                    //Burner Duty 50% 
+                    brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.MED));
+                    break;
+                }
+                default: {
+                    //Turn off
+                    BrewPotConfig config = brewPot.getConfig();
+                    config.setMode(BrewPotConfig.Mode.OFF);
+                    brewPot.updateConfig(config);
+                }
+            }
+
+        } else {
+            //Turn off
+            BrewPotConfig config = brewPot.getConfig();
+            config.setMode(BrewPotConfig.Mode.OFF);
+            brewPot.updateConfig(config);
+        }
+
+
+        //Fermenter 
+
+        if( session.getConfig().getMode() == SessionConfig.Mode.ACTIVE ) {
+
+            switch( session.getConfig().getPhase()) {
+                case FERMENTATION_START : {
+                   //Placeholder for ferm
+    
+                }
+               
+                default: {
+                    //Turn off
+                }
+            }
+
+        } else {
+            //Turn off
+        }
+        
+      
+    }
+
 
 
 

@@ -9,7 +9,7 @@ import com.brew.session.SessionManager;
 import com.brew.fermenter.FermenterConfig;
 import com.brew.fermenter.FermenterState;
 import com.brew.notify.Event;
-import com.brew.session.BrewSession;
+import com.brew.session.SessionConfig;
 
 import java.util.List;
 
@@ -37,11 +37,31 @@ public class SessionService {
     
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public BrewSession getStringResource() {
+    public SessionConfig getStringResource() {
         if( sessionManager.getCurrentSession() != null ) {
-            return sessionManager.getCurrentSession().getBrewSession();
+            return sessionManager.getCurrentSession().getConfig();
         } else return null;
         
+    }
+
+    @GET
+    @Path("/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public SessionConfig getConfig() {
+        if( sessionManager.getCurrentSession() != null ) {
+            return sessionManager.getCurrentSession().getConfig();
+        } else return null;
+        
+    }
+
+    @POST
+    @Path("/config")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response postConfig(SessionConfig config) {
+        //ObjectMapper mapper = new ObjectMapper();
+        //this.resource.setResource(json.getResource());
+        sessionManager.updateConfig(config);
+        return Response.status(Response.Status.OK).build();
     }
 
 

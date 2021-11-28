@@ -5,6 +5,9 @@
  */
 package com.brew;
 
+import com.brew.brewpot.BrewPot;
+import com.brew.brewpot.BrewPotConfig;
+import com.brew.brewpot.BrewPotState;
 import com.brew.config.Configuration;
 import com.brew.devices.Burner;
 import com.brew.fermenter.Fermenter;
@@ -17,6 +20,7 @@ import com.brew.probes.OneWireDevices;
 import com.brew.probes.OneWireMonitor;
 import com.brew.probes.TemperatureReading;
 import com.brew.rest.RecipeService;
+import com.brew.rest.BrewService;
 import com.brew.rest.BurnerService;
 import com.brew.rest.ConfigService;
 import com.brew.rest.FermenterService;
@@ -50,6 +54,9 @@ public class BrewServer {
     static WebSocketNotifier airNotifier;
     static WebSocketNotifier<FermenterState> fermStateNotifier;
     static WebSocketNotifier<FermenterConfig> fermConfigNotifier;
+    static WebSocketNotifier<BrewPotState> brewPotStateNotifier;
+    static WebSocketNotifier<BrewPotConfig> brewPotConfigNotifier;
+
 
     public static void main(String[] args) {
         
@@ -75,9 +82,14 @@ public class BrewServer {
        
         
         //If burner configured, create it..?
-        Burner burner = null;
+        // Burner burner = null;
+        // if( Configuration.get().getBurnerGPIO()!=null && Configuration.get().getBurnerProbe()!=null) {
+        //     burner = new Burner();
+        // }
+
+        BrewPot brewPot = null;
         if( Configuration.get().getBurnerGPIO()!=null && Configuration.get().getBurnerProbe()!=null) {
-            burner = new Burner();
+            brewPot = new BrewPot();
         }
         
         Fermenter fermenter = new Fermenter();
@@ -100,7 +112,15 @@ public class BrewServer {
 
 
         fermConfigNotifier = new WebSocketNotifier<FermenterConfig>();
-        Notifier.registerListener(Fermenter.EVENT_FERM_STATE, fermConfigNotifier);
+        Notifier.registerListener(Fermenter.EVENT_FERM_CONFIG, fermConfigNotifier);
+
+
+        brewPotStateNotifier = new WebSocketNotifier<BrewPotState>();
+        Notifier.registerListener(BrewPot.EVENT_BREW_STATE, brewPotStateNotifier);
+
+
+        brewPotConfigNotifier = new WebSocketNotifier<BrewPotConfig>();
+        Notifier.registerListener(BrewPot.EVENT_BREW_CONFIG, brewPotConfigNotifier);
         
         
         // Jetty / Web Server  //
@@ -134,20 +154,22 @@ public class BrewServer {
         
         
         // Jersey Stuff 
-        BurnerService burnerService = new BurnerService(burner);
+        //BurnerService burnerService = new BurnerService(burner);
         FermenterService fermenterService = new FermenterService(fermenter);
 
         SessionManager sessionManager = new SessionManager();
+        sessionManager.setBrewPot(brewPot);
 
         //TODO - temporary for testing..
         sessionManager.startNewSession();
 
         ResourceConfig rc = new ResourceConfig();
-        rc.register(burnerService);
+        //rc.register(burnerService);
         rc.register(fermenterService);
         rc.register(MultiPartFeature.class);
 
         rc.register(new ConfigService());
+        rc.register(new BrewService(brewPot));
 
         // SessionService sessionService = new SessionService();
         rc.register(new RecipeService(sessionManager));
