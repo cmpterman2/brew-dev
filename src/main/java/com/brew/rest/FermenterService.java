@@ -5,8 +5,6 @@
  */
 package com.brew.rest;
 
-import com.brew.devices.Burner;
-import com.brew.devices.Config;
 import com.brew.fermenter.Fermenter;
 import com.brew.fermenter.FermenterConfig;
 import com.brew.fermenter.FermenterState;

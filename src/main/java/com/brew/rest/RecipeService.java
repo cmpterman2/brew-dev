@@ -5,7 +5,6 @@
  */
 package com.brew.rest;
 
-import com.brew.devices.BurnerData;
 import com.brew.recipe.Recipe;
 import com.brew.session.SessionManager;
 

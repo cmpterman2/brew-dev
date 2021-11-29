@@ -6,8 +6,6 @@
 package com.brew.rest;
 
 import com.brew.config.Configuration;
-import com.brew.devices.Burner;
-import com.brew.devices.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
