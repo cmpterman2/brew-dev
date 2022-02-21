@@ -54,6 +54,14 @@ public class SessionService {
         
     }
 
+    @GET
+    @Path("/undo")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response undoConfig() {
+        sessionManager.undoConfig();
+        return Response.status(Response.Status.OK).build();
+    }
+
     @POST
     @Path("/config")
     @Consumes(MediaType.APPLICATION_JSON)

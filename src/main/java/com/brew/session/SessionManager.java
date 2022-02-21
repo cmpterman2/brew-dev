@@ -5,6 +5,8 @@
  */
 package com.brew.session;
 
+import java.util.ArrayDeque;
+
 import com.brew.brewpot.BrewPot;
 import com.brew.brewpot.BrewPotConfig;
 import com.brew.brewpot.BrewPotConfig.Mode;
@@ -24,6 +26,8 @@ import org.slf4j.LoggerFactory;
 public class SessionManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(SessionManager.class);
+
+    private ArrayDeque<SessionConfig> priorConfigs = new ArrayDeque<SessionConfig>();
     
     private Session session;
     private BrewPot brewPot;
@@ -71,8 +75,18 @@ public class SessionManager {
     }
 
 
-    
+    public synchronized void undoConfig() {
+        LOG.info("Reverting configuration");
+        if( this.priorConfigs.size() > 0 ) {
+            updateConfig(this.priorConfigs.pop(), true);
+        }
+    }
+
     public synchronized void updateConfig(SessionConfig newConfig) {
+        updateConfig(newConfig, false);
+    }
+    
+    private void updateConfig(SessionConfig newConfig, boolean isUndo) {
 
         SessionConfig oldConfig = this.session.getConfig();
 
@@ -80,7 +94,12 @@ public class SessionManager {
         if( newConfig != null && !newConfig.compare(oldConfig) ) {
             LOG.info("Updating configuration: {} --> {}", oldConfig, newConfig);
             session.setConfig(newConfig);
-            session.getConfig().setPhaseTime(System.currentTimeMillis());
+            
+            if( !isUndo ) {
+                //Don't reset time in case of old config
+                session.getConfig().setPhaseTime(System.currentTimeMillis());
+                priorConfigs.push(oldConfig.duplicate());
+            }
 
             //NOTIFY
             com.brew.notify.Notifier.notifyListeners(new Event<SessionConfig> (EVENT_SESSION_CONFIG, this.session.getConfig().duplicate()));
@@ -95,12 +114,12 @@ public class SessionManager {
                 case BREW_PREMASH : {
                     //Burner Target 
                     //TODO LOAD THIS FROM RECIPE
-                    brewPot.updateConfig(new BrewPotConfig(162.9f, BrewPotConfig.Mode.HIGH));
+                    brewPot.updateConfig(new BrewPotConfig(166.6f, BrewPotConfig.Mode.HIGH));
                     break;
                 }
                 case BREW_MASH : {
                     //Burner Target and Low Duty
-                    brewPot.updateConfig(new BrewPotConfig(155f, BrewPotConfig.Mode.LOW));
+                    brewPot.updateConfig(new BrewPotConfig(156f, BrewPotConfig.Mode.LOW));
                     break;
                 }
                 case BREW_PREBOIL : {

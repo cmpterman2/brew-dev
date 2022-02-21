@@ -81,6 +81,9 @@ public class RecipeService {
 						org.blh.beerxml.type.Recipe bRecipe = (org.blh.beerxml.type.Recipe) record;
 						Recipe recipe = new Recipe();
 						recipe.setName(bRecipe.getName());
+						System.out.println(bRecipe.getMashProfile().getMashSteps().get(0).getBeerXMLTagsAndValues().get("INFUSE_TEMP"));
+						// recipe.setPreMashTarget();
+						// recipe.setMashTarget(mashTarget);
 
 						sessionManager.getCurrentSession().setRecipe(recipe);
 

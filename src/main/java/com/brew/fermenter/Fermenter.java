@@ -6,6 +6,7 @@
 package com.brew.fermenter;
 
 import com.brew.config.Configuration;
+import com.brew.fermenter.FermenterConfig.Mode;
 import com.brew.gpio.Pin;
 import com.brew.gpio.PinManager;
 import com.brew.notify.Event;
@@ -120,7 +121,9 @@ public class Fermenter {
                     //fall through to auto since it should go to auto
                 }
                 case TARGET_PITCH:
-                    updateTarget(config.calculatePitchTarget());
+                    if( config.getMode() == Mode.TARGET_PITCH ) {
+                        updateTarget(config.calculatePitchTarget());
+                    }
                     
                     if (state.getFermTemp() != Float.NaN) {
                         float diff = state.getFermTemp() - state.getTarget();
