@@ -12,8 +12,8 @@ package com.brew.recipe;
 public class Recipe {
     private String name;
 
-    private float preMashTarget;
-    private float mashTarget;
+    private float preMashTarget = 164.0f;
+    private float mashTarget = 155.0f;
     //Total Water Needed
     
     //Water Additions

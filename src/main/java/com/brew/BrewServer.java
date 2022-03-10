@@ -23,6 +23,7 @@ import com.brew.rest.BrewService;
 import com.brew.rest.ConfigService;
 import com.brew.rest.FermenterService;
 import com.brew.rest.SessionService;
+import com.brew.session.SessionConfig;
 import com.brew.session.SessionManager;
 import com.brew.websocket.WebSocketNotifier;
 import com.brew.websocket.WebSocketServlet;
@@ -47,13 +48,11 @@ import org.slf4j.LoggerFactory;
 public class BrewServer {
     private static final Logger LOG = LoggerFactory.getLogger(BrewServer.class);
     
-    static WebSocketNotifier burnerNotifier;
-    static WebSocketNotifier fermNotifier;
-    static WebSocketNotifier airNotifier;
     static WebSocketNotifier<FermenterState> fermStateNotifier;
     static WebSocketNotifier<FermenterConfig> fermConfigNotifier;
     static WebSocketNotifier<BrewPotState> brewPotStateNotifier;
     static WebSocketNotifier<BrewPotConfig> brewPotConfigNotifier;
+    static WebSocketNotifier<SessionConfig> sessionConfigNotifier;
 
 
     public static void main(String[] args) {
@@ -108,18 +107,18 @@ public class BrewServer {
         fermStateNotifier = new WebSocketNotifier<FermenterState>();
         Notifier.registerListener(Fermenter.EVENT_FERM_STATE, fermStateNotifier);
 
-
         fermConfigNotifier = new WebSocketNotifier<FermenterConfig>();
         Notifier.registerListener(Fermenter.EVENT_FERM_CONFIG, fermConfigNotifier);
-
 
         brewPotStateNotifier = new WebSocketNotifier<BrewPotState>();
         Notifier.registerListener(BrewPot.EVENT_BREW_STATE, brewPotStateNotifier);
 
-
         brewPotConfigNotifier = new WebSocketNotifier<BrewPotConfig>();
         Notifier.registerListener(BrewPot.EVENT_BREW_CONFIG, brewPotConfigNotifier);
-        
+
+        sessionConfigNotifier = new WebSocketNotifier<SessionConfig>();
+        Notifier.registerListener(SessionManager.EVENT_SESSION_CONFIG, sessionConfigNotifier);
+
         
         // Jetty / Web Server  //
         Server server = new Server();
@@ -157,6 +156,8 @@ public class BrewServer {
 
         SessionManager sessionManager = new SessionManager();
         sessionManager.setBrewPot(brewPot);
+        sessionManager.setFermenter(fermenter);
+        
 
         //TODO - temporary for testing..
         sessionManager.startNewSession();

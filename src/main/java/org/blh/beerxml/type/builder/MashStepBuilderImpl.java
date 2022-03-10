@@ -22,6 +22,7 @@ public class MashStepBuilderImpl implements MashStepBuilder {
     private Minutes stepTime;
     private Minutes rampTime;
     private Celsius endTemp;
+    private Celsius infuseTemp;
 
     public MashStepBuilderImpl() {
     }
@@ -94,6 +95,13 @@ public class MashStepBuilderImpl implements MashStepBuilder {
             case MashStep.END_TEMP:
                 endTemp = new Celsius(Double.parseDouble(value));
                 break;
+            case MashStep.INFUSE_TEMP:
+                if( value.endsWith(" F")) {
+                    value = value.substring(0, value.length()-2);
+                    infuseTemp = new Celsius((Double.parseDouble(value) - 32.0 )*5.0/9.0);
+                }
+                
+            break;
             default:
                 //throw new UnknownTagException("Unknown mash step value: " + tagName);
         }
@@ -102,6 +110,6 @@ public class MashStepBuilderImpl implements MashStepBuilder {
 
     @Override
     public MashStep create() {
-        return new MashStep(name, type, infuseAmount, stepTemp, stepTime, rampTime, endTemp);
+        return new MashStep(name, type, infuseAmount, stepTemp, stepTime, rampTime, endTemp, infuseTemp);
     }
 }

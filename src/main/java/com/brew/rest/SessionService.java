@@ -6,6 +6,8 @@
 package com.brew.rest;
 
 import com.brew.session.SessionManager;
+import com.brew.brewpot.BrewPotConfig;
+import com.brew.brewpot.BrewPotState;
 import com.brew.fermenter.FermenterConfig;
 import com.brew.fermenter.FermenterState;
 import com.brew.notify.Event;
@@ -55,7 +57,7 @@ public class SessionService {
     }
 
     @GET
-    @Path("/undo")
+    @Path("/config/undo")
     @Produces(MediaType.APPLICATION_JSON)
     public Response undoConfig() {
         sessionManager.undoConfig();
@@ -90,6 +92,7 @@ public class SessionService {
             return sessionManager.getCurrentSession().getFermenterStateHistory();
         } else return null;
     }
+
 
     // @POST
     // @Consumes(MediaType.APPLICATION_JSON)

@@ -9,13 +9,14 @@ import java.util.ArrayDeque;
 
 import com.brew.brewpot.BrewPot;
 import com.brew.brewpot.BrewPotConfig;
-import com.brew.brewpot.BrewPotConfig.Mode;
 import com.brew.fermenter.Fermenter;
 import com.brew.fermenter.FermenterConfig;
 import com.brew.fermenter.FermenterState;
 import com.brew.notify.Event;
 import com.brew.notify.Listener;
 import com.brew.notify.Notifier;
+import com.brew.recipe.Recipe;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class SessionManager {
     
     private Session session;
     private BrewPot brewPot;
+    private Fermenter fermenter;
 
     public static final String EVENT_SESSION_CONFIG = "SESSION.CONFIG";
 
@@ -40,6 +42,14 @@ public class SessionManager {
         //Temporary
         
 
+    }
+
+    public Fermenter getFermenter() {
+        return fermenter;
+    }
+
+    public void setFermenter(Fermenter fermenter) {
+        this.fermenter = fermenter;
     }
 
     public BrewPot getBrewPot() {
@@ -53,9 +63,11 @@ public class SessionManager {
     public void startNewSession() {
         session = new Session();
         session.setConfig(new SessionConfig());
-        session.getConfig().setPhase(SessionConfig.Phase.RECIPE);
+        session.getConfig().setPhase(SessionConfig.Phase.RECIPE_PLAN);
         session.getConfig().setMode(SessionConfig.Mode.PAUSED);
         session.getConfig().setPhaseTime(System.currentTimeMillis());
+
+        session.setRecipe(new Recipe());
 
         //Register listeners or do it when the state changes..?
         //Add for now for testing -- Might need to save these off if we ever want to de-register..
@@ -95,7 +107,12 @@ public class SessionManager {
             LOG.info("Updating configuration: {} --> {}", oldConfig, newConfig);
             session.setConfig(newConfig);
             
-            if( !isUndo ) {
+            //Compare if this is the same config but just paused
+            SessionConfig oldWithNewMode = oldConfig.duplicate();
+            oldWithNewMode.setMode(newConfig.getMode());
+
+
+            if( !isUndo && !newConfig.compare(oldWithNewMode)) {
                 //Don't reset time in case of old config
                 session.getConfig().setPhaseTime(System.currentTimeMillis());
                 priorConfigs.push(oldConfig.duplicate());
@@ -107,64 +124,117 @@ public class SessionManager {
 
 
         //Apply configuration change to burner
+        //IF this is a brew change
+        if( session.getConfig().getPhase().toString().startsWith("BREW") || oldConfig.getPhase().toString().startsWith("BREW")) {
         
-        if( session.getConfig().getMode() == SessionConfig.Mode.ACTIVE ) {
+            if( session.getConfig().getMode() == SessionConfig.Mode.ACTIVE ) {
 
-            switch( session.getConfig().getPhase()) {
-                case BREW_PREMASH : {
-                    //Burner Target 
-                    //TODO LOAD THIS FROM RECIPE
-                    brewPot.updateConfig(new BrewPotConfig(166.6f, BrewPotConfig.Mode.HIGH));
-                    break;
+                switch( session.getConfig().getPhase()) {
+                    case BREW_PLAN : {
+                        //Burner Target 
+                        //TODO LOAD THIS FROM RECIPE
+                        brewPot.updateConfig(new BrewPotConfig(session.getRecipe().getPreMashTarget(), BrewPotConfig.Mode.OFF));
+                        break;
+                    }
+                    case BREW_PREMASH : {
+                        //Burner Target 
+                        //TODO LOAD THIS FROM RECIPE
+                        brewPot.updateConfig(new BrewPotConfig(session.getRecipe().getPreMashTarget(), BrewPotConfig.Mode.HIGH));
+                        break;
+                    }
+                    case BREW_MASH : {
+                        //Burner Target and Low Duty  // Nevermind..off
+                        brewPot.updateConfig(new BrewPotConfig(session.getRecipe().getMashTarget(), BrewPotConfig.Mode.OFF));
+                        break;
+                    }
+                    case BREW_PREBOIL : {
+                        //Burner ON 
+                        brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.HIGH));
+                        break;
+                    }
+                    case BREW_BOIL : {
+                        //Burner Duty 50% 
+                        brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.MED));
+                        break;
+                    }
+                    default: {
+                        //Turn off
+                        BrewPotConfig config = brewPot.getConfig();
+                        config.setMode(BrewPotConfig.Mode.OFF);
+                        brewPot.updateConfig(config);
+                    }
                 }
-                case BREW_MASH : {
-                    //Burner Target and Low Duty
-                    brewPot.updateConfig(new BrewPotConfig(156f, BrewPotConfig.Mode.LOW));
-                    break;
-                }
-                case BREW_PREBOIL : {
-                    //Burner ON 
-                    brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.HIGH));
-                    break;
-                }
-                case BREW_BOIL : {
-                    //Burner Duty 50% 
-                    brewPot.updateConfig(new BrewPotConfig(212f, BrewPotConfig.Mode.MED));
-                    break;
-                }
-                default: {
-                    //Turn off
-                    BrewPotConfig config = brewPot.getConfig();
-                    config.setMode(BrewPotConfig.Mode.OFF);
-                    brewPot.updateConfig(config);
-                }
+
+            } else {
+                //Turn off
+                BrewPotConfig config = brewPot.getConfig();
+                config.setMode(BrewPotConfig.Mode.OFF);
+                brewPot.updateConfig(config);
             }
-
-        } else {
-            //Turn off
-            BrewPotConfig config = brewPot.getConfig();
-            config.setMode(BrewPotConfig.Mode.OFF);
-            brewPot.updateConfig(config);
         }
 
 
         //Fermenter 
+        //Apply configuration change to burner
+        //IF this is a Fermentation change
 
-        if( session.getConfig().getMode() == SessionConfig.Mode.ACTIVE ) {
+        if( session.getConfig().getPhase().toString().startsWith("FERMENTATION") || oldConfig.getPhase().toString().startsWith("FERMENTATION")) {
+        
+            FermenterConfig config = fermenter.getConfig().duplicate();
+            boolean isActive = session.getConfig().getMode() == SessionConfig.Mode.ACTIVE;
+
 
             switch( session.getConfig().getPhase()) {
-                case FERMENTATION_START : {
-                   //Placeholder for ferm
-    
+                case FERMENTATION_PLAN : {
+                    //TODO - CLEAR OUT DATA..
+                    config.setMode(FermenterConfig.Mode.OFF);
+                    break;
                 }
-               
+                case FERMENTATION_PITCH : {
+                    config.setMode(isActive?FermenterConfig.Mode.TARGET_PITCH:FermenterConfig.Mode.OFF);
+                    break;
+                }
+                case FERMENTATION_FERMENT : {
+                    config.setMode(isActive?FermenterConfig.Mode.SCHEDULE:FermenterConfig.Mode.SCHEDULE_PAUSE);
+                    break;
+                }
+                case FERMENTATION_DONE : {
+                    config.setMode(FermenterConfig.Mode.OFF);
+                    break;
+                }
+            
                 default: {
-                    //Turn off
+                    config.setMode(FermenterConfig.Mode.OFF);
                 }
             }
 
-        } else {
-            //Turn off
+            fermenter.update(config);
+
+
+        }
+
+        //RECIPE change...
+        if( session.getConfig().getPhase().toString().startsWith("RECIPE") || oldConfig.getPhase().toString().startsWith("RECIPE")) {
+        
+            
+            switch( session.getConfig().getPhase()) {
+                case RECIPE_NEW : {
+                    //CLEAR OUT OLD DATA..
+                    
+                    //ClEAR out stack
+
+                    
+                    break;
+                }
+                
+            
+                default: {
+                    //config.setMode(FermenterConfig.Mode.OFF);
+                }
+            }
+
+            
+
         }
         
       

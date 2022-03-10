@@ -83,6 +83,9 @@ public class MiscBuilderImpl implements MiscBuilder {
                 name = value;
                 break;
             case Misc.TYPE:
+                if (value.toUpperCase().equals("WATER AGENT")) {
+                    value = "AGENT";
+                }
                 type = Misc.MISC_TYPE.valueOf(value.toUpperCase());
                 break;
             case Misc.USE:

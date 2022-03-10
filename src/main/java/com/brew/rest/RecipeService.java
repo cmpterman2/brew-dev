@@ -63,7 +63,7 @@ public class RecipeService {
 		@FormDataParam("file") FormDataContentDisposition fileDetail)  {
 
 		//String uploadedFileLocation = "c://uploaded/" + fileDetail.getFileName();
-		//System.out.println("Called");
+		System.out.println("Uploaded");
 
 		// save it
 		//writeToFile(uploadedInputStream, uploadedFileLocation);
@@ -81,10 +81,12 @@ public class RecipeService {
 						org.blh.beerxml.type.Recipe bRecipe = (org.blh.beerxml.type.Recipe) record;
 						Recipe recipe = new Recipe();
 						recipe.setName(bRecipe.getName());
-						System.out.println(bRecipe.getMashProfile().getMashSteps().get(0).getBeerXMLTagsAndValues().get("INFUSE_TEMP"));
-						// recipe.setPreMashTarget();
-						// recipe.setMashTarget(mashTarget);
-
+						try {
+							recipe.setPreMashTarget((float) (bRecipe.getMashProfile().getMashSteps().get(0).getInfuseTemp().value() * 9.0f / 5.0f + 32.0f));
+							recipe.setMashTarget((float) (bRecipe.getMashProfile().getMashSteps().get(0).getStepTemp().value() * 9.0f / 5.0f + 32.0f));
+						} catch (NullPointerException npe )
+						{}
+						
 						sessionManager.getCurrentSession().setRecipe(recipe);
 
 						status = Response.Status.OK;

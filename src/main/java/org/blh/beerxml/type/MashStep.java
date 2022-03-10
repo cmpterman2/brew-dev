@@ -23,6 +23,7 @@ public class MashStep implements BeerXMLRecord {
     public static final String STEP_TIME = "STEP_TIME";
     public static final String RAMP_TIME = "RAMP_TIME";
     public static final String END_TEMP = "END_TEMP";
+    public static final String INFUSE_TEMP = "INFUSE_TEMP";
 
     private final String name;
     private final MASH_STEP_TYPE type;
@@ -34,6 +35,7 @@ public class MashStep implements BeerXMLRecord {
     private final Minutes stepTime;
     private final Minutes rampTime;
     private final Celsius endTemp;
+    private final Celsius infuseTemp;
 
     /**
      * Valid values for mash step
@@ -44,7 +46,7 @@ public class MashStep implements BeerXMLRecord {
     }
 
     public MashStep(String name, MASH_STEP_TYPE type, Liters infuseAmount,
-            Celsius stepTemp, Minutes stepTime, Minutes rampTime, Celsius endTemp) {
+            Celsius stepTemp, Minutes stepTime, Minutes rampTime, Celsius endTemp, Celsius infuseTemp) {
         this.name = name;
         this.type = type;
         this.infuseAmount = infuseAmount;
@@ -52,6 +54,7 @@ public class MashStep implements BeerXMLRecord {
         this.stepTime = stepTime;
         this.rampTime = rampTime;
         this.endTemp = endTemp;
+        this.infuseTemp = infuseTemp;
     }
 
     public String getName() {
@@ -82,6 +85,10 @@ public class MashStep implements BeerXMLRecord {
         return endTemp;
     }
 
+    public Celsius getInfuseTemp() {
+        return infuseTemp;
+    }
+
     @Override
     public Map<String, String> getBeerXMLTagsAndValues() {
         Map<String, String> tagsAndValues = new HashMap<>();
@@ -93,6 +100,7 @@ public class MashStep implements BeerXMLRecord {
         tagsAndValues.put(STEP_TIME, Utils.toStringOrNull(stepTime));
         tagsAndValues.put(RAMP_TIME, Utils.toStringOrNull(rampTime));
         tagsAndValues.put(END_TEMP, Utils.toStringOrNull(endTemp));
+        tagsAndValues.put(INFUSE_TEMP, Utils.toStringOrNull(infuseTemp));
 
         return tagsAndValues;
     }
@@ -135,6 +143,9 @@ public class MashStep implements BeerXMLRecord {
         if (!Objects.equals(this.rampTime, other.rampTime)) {
             return false;
         }
+        if (!Objects.equals(this.infuseTemp, other.infuseTemp)) {
+            return false;
+        }
         return Objects.equals(this.endTemp, other.endTemp);
     }
 
@@ -149,6 +160,7 @@ public class MashStep implements BeerXMLRecord {
         hash = 23 * hash + Objects.hashCode(this.stepTime);
         hash = 23 * hash + Objects.hashCode(this.rampTime);
         hash = 23 * hash + Objects.hashCode(this.endTemp);
+        hash = 23 * hash + Objects.hashCode(this.infuseTemp);
         return hash;
     }
 }
