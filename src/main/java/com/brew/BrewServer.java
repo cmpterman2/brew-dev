@@ -22,6 +22,7 @@ import com.brew.rest.RecipeService;
 import com.brew.rest.BrewService;
 import com.brew.rest.ConfigService;
 import com.brew.rest.FermenterService;
+import com.brew.rest.ISpindelService;
 import com.brew.rest.SessionService;
 import com.brew.session.SessionConfig;
 import com.brew.session.SessionManager;
@@ -173,6 +174,7 @@ public class BrewServer {
         // SessionService sessionService = new SessionService();
         rc.register(new RecipeService(sessionManager));
         rc.register(new SessionService(sessionManager));
+        rc.register(new ISpindelService());
 
         ServletContainer sc = new ServletContainer(rc);
 //
